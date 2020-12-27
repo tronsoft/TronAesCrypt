@@ -6,8 +6,13 @@ namespace TRONSoft.TronAesCrypt.Core
 {
     public class AesCrypt
     {
-        //AES block size in bytes
+        // AES block size in bytes
         public const int AesBlockSize = 16;
+        
+        /// <summary>
+        /// The size of the key. For AES-256 that is 256/8 = 32
+        /// </summary>
+        public const int KeySize = 32;
         
         // encryption/decryption buffer size - 64K
         public const int BufferSize = 64 * 1024;
@@ -86,23 +91,18 @@ namespace TRONSoft.TronAesCrypt.Core
             return decryptedFile;
         }
 
-        private static RijndaelManaged CreateAes(string password, byte[] salt)
+        private static RijndaelManaged CreateAes(string password, byte[] iv) => CreateAes(password.GetUtf8Bytes(), iv);
+        private static RijndaelManaged CreateAes(byte[] password, byte[] iv)
         {
-            const int keySize = 256;
-            const int blockSize = 128;
-
-            var passwordBytes = Encoding.UTF8.GetBytes(password);
-            var key = new Rfc2898DeriveBytes(passwordBytes, salt, 50000);
+            var key = CreateKey(password, iv);
             return new RijndaelManaged
             {
-                KeySize = keySize,
-                BlockSize = blockSize,
+                KeySize = KeySize * 8,
+                BlockSize = AesBlockSize * 8,
                 Padding = PaddingMode.PKCS7,
                 Mode = CipherMode.CBC,
-                // http://stackoverflow.com/questions/2659214/why-do-i-need-to-use-the-rfc2898derivebytes-class-in-net-instead-of-directly
-                // "What it does is repeatedly hash the user password along with the salt." High iteration counts.
-                Key = key.GetBytes(keySize / 8),
-                IV = key.GetBytes(128 / 8)
+                Key = key.GetBytes(KeySize),
+                IV = iv
             };
         }
 
@@ -133,33 +133,59 @@ namespace TRONSoft.TronAesCrypt.Core
                 throw new ArgumentException("The password is too long.");
             }
             
-            
+            var passwordBytes = password.GetUtf8Bytes();
             
             // http://stackoverflow.com/questions/27645527/aes-encryption-on-large-files
 
             var iv0 = GenerateRandomSalt();
-            /*var aes = CreateAes(password, iv0);
-            using var encryptedStream = new MemoryStream();
-            using var cryptoStream = new CryptoStream(
-                encryptedStream,
-                aes.CreateEncryptor(),
-                CryptoStreamMode.Write);
-
-            // write salt to the beginning of the output file, so in this case can be random every time
-            outStream.Write(salt, 0, salt.Length);
-
-            int read;
-            var buffer = new byte[1024 * 1024];
-            while ((read = inStream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                cryptoStream.Write(buffer, 0, read);
-            }
-
-            // Close all the connections.
-            cryptoStream.Close();
-            encryptedStream.Close();*/
+            var iv1 = GenerateRandomSalt();
+            
+            var internalKey = GenerateRandomSalt(32);
+            using var cipher0 = CreateAes(internalKey, iv0);
+            var encryptor0 = cipher0.CreateEncryptor();
+            
+            // create hmac for cipher text
+            using var hmac0 = new HMACSHA256(internalKey);
+            
+            // using var cipher1 = CreateAes(password, iv1);
+            // var encryptor1 = cipher1.CreateEncryptor();
+            
+            // encrypt the main key and iv
+            var encryptedMainKeyIv = EncryptMainKeyAndIV(passwordBytes, iv1);
             
             WriteHeader(outStream);
+            
+            // write the iv used to encrypt the main iv and the encryption key
+            outStream.Write(iv1);
+            
+            // write encrypted main iv and key
+            outStream.Write(encryptedMainKeyIv);
+            
+            // write HMAC-SHA256 of the encrypted iv and key
+            using var hmac1 = new HMACSHA256(passwordBytes);
+            outStream.Write(hmac1.ComputeHash(encryptedMainKeyIv));
+            
+            /*var aes = CreateAes(password, iv0);
+                using var encryptedStream = new MemoryStream();
+                using var cryptoStream = new CryptoStream(
+                    encryptedStream,
+                    aes.CreateEncryptor(),
+                    CryptoStreamMode.Write);
+
+                // write salt to the beginning of the output file, so in this case can be random every time
+                outStream.Write(salt, 0, salt.Length);
+
+                int read;
+                var buffer = new byte[1024 * 1024];
+                while ((read = inStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    cryptoStream.Write(buffer, 0, read);
+                }
+
+                // Close all the connections.
+                cryptoStream.Close();
+                encryptedStream.Close();*/
+            
             outStream.Position = 0;
         }
 
@@ -204,9 +230,22 @@ namespace TRONSoft.TronAesCrypt.Core
             outStream.WriteByte(0);
         }
 
-        // private string StretchPasswordAndIv(string password, byte[] iv)
-        // {
-        //     var digest = iv + 
-        // }
+        private static Rfc2898DeriveBytes CreateKey(string password, byte[] iv) => CreateKey(password.GetUtf8Bytes(), iv);
+        private static Rfc2898DeriveBytes CreateKey(byte[] password, byte[] iv)
+        {
+            return new Rfc2898DeriveBytes(password, iv, 50000);
+        }
+
+        private byte[] EncryptMainKeyAndIV(byte[] password, byte[] iv)
+        {
+            using var cipher = CreateAes(password, iv);
+            using var msEncrypt = new MemoryStream();
+            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Write);
+            cryptoStream.Write(iv);
+            cryptoStream.Write(password);
+            cryptoStream.FlushFinalBlock();
+
+            return msEncrypt.ToArray();
+        }
     }
 }
