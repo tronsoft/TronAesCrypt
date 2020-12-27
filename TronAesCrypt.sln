@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TronAesCrypt.Main", "TronAesCrypt.Main\TronAesCrypt.Main.csproj", "{89FDB561-2D83-4811-82FD-55F96B33302C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TronAesCrypt.Tests", "TronAesCrypt.Tests\TronAesCrypt.Tests.csproj", "{89FDB561-2D83-4811-82FD-55F96B33302C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TronAesCrypt.Core", "TronAesCrypt.Core\TronAesCrypt.Core.csproj", "{85FB8765-FC20-4FAB-8BA6-6DFE351AF0DC}"
 EndProject
