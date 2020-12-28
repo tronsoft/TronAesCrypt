@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -62,8 +63,6 @@ namespace TRONSoft.TronAesCrypt.Main
             
             outStream.ReadByte().Should().Be(0, "This is in the standard");
             outStream.ReadByte().Should().Be(0, "This is in the standard");
-
-            outStream.Position.Should().Be(outStream.Length, "everything was read.");
         }
     }
 }
