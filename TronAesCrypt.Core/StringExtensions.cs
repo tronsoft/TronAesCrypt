@@ -14,5 +14,16 @@ namespace TRONSoft.TronAesCrypt.Core
 
             return Encoding.UTF8.GetBytes(source);
         }
+        
+        public static byte[] GetUtf16Bytes(this string source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            
+            // little-endian UTF-16.
+            return Encoding.Unicode.GetBytes(source);
+        }
     }
 }

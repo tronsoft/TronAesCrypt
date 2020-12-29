@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace TRONSoft.TronAesCrypt.Core
 {
@@ -25,7 +27,7 @@ namespace TRONSoft.TronAesCrypt.Core
         public void EncryptFile(string inputFileName, string outputFileName, string password, int bufferSize)
         {
             using var inputStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read);
-            using var outputStream = new FileStream(outputFileName, FileMode.Open, FileAccess.Write);
+            using var outputStream = new FileStream(outputFileName, FileMode.OpenOrCreate, FileAccess.Write);
             EncryptStream(inputStream, outputStream, password, bufferSize);
 
             inputStream.Close();
@@ -83,55 +85,72 @@ namespace TRONSoft.TronAesCrypt.Core
                 throw new ArgumentException("The password is too long.");
             }
 
-            var passwordBytes = password.GetUtf8Bytes();
-            var ivData = GenerateRandomSalt();
-            var ivMainKey = GenerateRandomSalt();
+            var iv0Data = new byte[16]; //GenerateRandomSalt();
+            var iv1MainKey = new byte[16]; //GenerateRandomSalt();
+            var key = StretchPassword(password, iv1MainKey);
 
             // create hmac for cipher text
-            var internalKey = GenerateRandomSalt(32);
-            using var hmac0 = new HMACSHA256(internalKey);
-            var hmac0Value = hmac0.ComputeHash(inStream);
-            inStream.Position = 0;
-
+            var internalKey = new byte[32]; //GenerateRandomSalt(32);
+            
             // encrypt the main key and iv
-            var encryptedMainKeyIv = EncryptMainKeyAndIV(passwordBytes, ivMainKey);
+            var encryptedMainKeyIv = EncryptMainKeyAndIV(key, iv1MainKey, internalKey, iv0Data);
 
             WriteHeader(outStream);
 
             // write the iv used to encrypt the main iv and the encryption key
-            outStream.Write(ivMainKey);
+            outStream.Write(iv1MainKey);
 
             // write encrypted main iv and key
             outStream.Write(encryptedMainKeyIv);
 
             // write HMAC-SHA256 of the encrypted iv and key
-            using var hmac1 = new HMACSHA256(passwordBytes);
+            using var hmac1 = new HMACSHA256(key);
             outStream.Write(hmac1.ComputeHash(encryptedMainKeyIv));
 
             // Encrypt the 'real' data.
-            var fileSize = EncryptData(inStream, outStream, internalKey, ivData);
-            outStream.WriteByte(fileSize);
-            outStream.Write(hmac0Value);
+            // var (fileSize, hmac0Value) = EncryptData(inStream, outStream, internalKey, iv0Data, bufferSize);
+            // outStream.WriteByte(fileSize);
+            // outStream.Write(hmac0Value);
+            
+            using var hmac0 = new HMACSHA256(internalKey);
+            outStream.WriteByte(0);
+            outStream.Write(hmac0.ComputeHash(new byte[0]));
             outStream.Position = 0;
         }
 
-        private static byte EncryptData(Stream inStream, Stream outStream, byte[] internalKey, byte[] iv)
+        private static (byte, byte[]) EncryptData(Stream inStream, Stream outStream, byte[] internalKey, byte[] iv, int bufferSize)
         {
+           var lastDataReadSize = 0; // File size modulo 16 in least significant bit positions
             using var cipher = CreateAes(internalKey, iv);
-            using var cryptoStream = new CryptoStream(outStream, cipher.CreateEncryptor(), CryptoStreamMode.Write, true);
-            var totalBytesRead = 0;
+            using var ms = new MemoryStream();
+            using var cryptoStream = new CryptoStream(ms, cipher.CreateEncryptor(), CryptoStreamMode.Write, true);
             int bytesRead;
-            var buffer = new byte[1024];
-            do
+            var buffer = new byte[bufferSize];
+            while ((bytesRead = inStream.Read(buffer, 0, buffer.Length)) > 0)
             {
-                bytesRead = inStream.Read(buffer, 0, buffer.Length);
-                totalBytesRead += bytesRead;
                 cryptoStream.Write(buffer, 0, bytesRead);
-            } while (bytesRead > 0);
+                if (bytesRead < bufferSize)
+                {
+                    lastDataReadSize = bytesRead % AesBlockSize;
+                    if (lastDataReadSize != 0)
+                    {
+                        var padLen = 16 - bytesRead % AesBlockSize;
+                        var padding = new byte[padLen];
+                        Array.Fill(padding, (byte)padLen);
+                        cryptoStream.Write(padding);
+                    }
+                }
+            }
 
+            var myarr = ms.ToArray();
+            using var hmac0 = new HMACSHA256(internalKey);
+            var hmacValue = hmac0.ComputeHash(ms);
+            ms.Position = 0;
+            outStream.Write(myarr);
+            
             cryptoStream.Close();
 
-            return (byte) (totalBytesRead % AesBlockSize);
+            return ((byte) lastDataReadSize, hmacValue);
         }
 
         private static RijndaelManaged CreateAes(string password, byte[] iv)
@@ -139,16 +158,15 @@ namespace TRONSoft.TronAesCrypt.Core
             return CreateAes(password.GetUtf8Bytes(), iv);
         }
 
-        private static RijndaelManaged CreateAes(byte[] password, byte[] iv)
+        private static RijndaelManaged CreateAes(byte[] key, byte[] iv)
         {
-            var key = CreateKey(password, iv);
             return new RijndaelManaged
             {
                 KeySize = KeySize * 8,
                 BlockSize = AesBlockSize * 8,
-                Padding = PaddingMode.PKCS7,
+                Padding = PaddingMode.None, //.PKCS7, // of moet dit none zijn?
                 Mode = CipherMode.CBC,
-                Key = key.GetBytes(KeySize),
+                Key = key,
                 IV = iv
             };
         }
@@ -172,7 +190,7 @@ namespace TRONSoft.TronAesCrypt.Core
         {
             // Created-by extensions
             var createdBy = "CREATED_BY";
-            var appName = "TronAesCrypt";
+            var appName = "pyAesCrypt 0.4.3"; //"TronAesCrypt";
 
             // Write CREATED_BY extension length
             outStream.WriteByte(0);
@@ -185,7 +203,7 @@ namespace TRONSoft.TronAesCrypt.Core
 
             // Write extensions container
             outStream.WriteByte(0);
-            outStream.WriteByte(80);
+            outStream.WriteByte(128);
 
             outStream.Write(new byte[128]);
 
@@ -194,23 +212,13 @@ namespace TRONSoft.TronAesCrypt.Core
             outStream.WriteByte(0);
         }
 
-        private static Rfc2898DeriveBytes CreateKey(string password, byte[] iv)
+        private byte[] EncryptMainKeyAndIV(byte[] key, byte[] iv, byte[] internalKey, byte[] ivInternal)
         {
-            return CreateKey(password.GetUtf8Bytes(), iv);
-        }
-
-        private static Rfc2898DeriveBytes CreateKey(byte[] password, byte[] iv)
-        {
-            return new(password, iv, 50000);
-        }
-
-        private byte[] EncryptMainKeyAndIV(byte[] password, byte[] iv)
-        {
-            using var cipher = CreateAes(password, iv);
+            using var cipher = CreateAes(key, iv);
             using var msEncrypt = new MemoryStream();
             using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Write);
-            cryptoStream.Write(iv);
-            cryptoStream.Write(password);
+            cryptoStream.Write(ivInternal);
+            cryptoStream.Write(internalKey);
             cryptoStream.FlushFinalBlock();
 
             return msEncrypt.ToArray();
@@ -222,16 +230,36 @@ namespace TRONSoft.TronAesCrypt.Core
         /// <returns></returns>
         private static byte[] GenerateRandomSalt(int size = AesBlockSize)
         {
-            if (size < 1)
-            {
-                throw new ArgumentException("Size must be greater or equal to 1");
-            }
-
-            var data = new byte[size];
-            using var rng = new RNGCryptoServiceProvider();
-            rng.GetBytes(data);
-
-            return data;
+             if (size < 1)
+             {
+                 throw new ArgumentException("Size must be greater or equal to 1");
+             }
+            
+             var data = new byte[size];
+             using var rng = new RNGCryptoServiceProvider();
+             rng.GetBytes(data);
+             
+             return data;
         }
+        
+        private byte[] StretchPassword(string password, byte[] iv)
+        {
+            var passwordBytes = password.GetUtf16Bytes();
+            using var hash = SHA256.Create();
+            var key = new byte[KeySize];
+            Array.Copy(iv, key, iv.Length);
+            
+            for (var i = 0; i < 8192; i++)
+            {
+                hash.Initialize();
+                hash.TransformBlock(key, 0, key.Length, key, 0);
+                hash.TransformFinalBlock(passwordBytes, 0, passwordBytes.Length);
+                key = hash.Hash;
+            }
+            
+            return key;
+        }
+        
+        
     }
 }

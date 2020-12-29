@@ -64,5 +64,18 @@ namespace TRONSoft.TronAesCrypt.Main
             outStream.ReadByte().Should().Be(0, "This is in the standard");
             outStream.ReadByte().Should().Be(0, "This is in the standard");
         }
+        
+        [TestMethod]
+        public void WriteAFile()
+        {
+            // Arrange
+            var encryptedFile = @"e:\tmp\input.txt.aes";
+            File.Delete(encryptedFile);
+            new AesCrypt().EncryptFile(@"e:\tmp\input.txt", encryptedFile, "foopassword!1$A", 64 * 1024);
+            
+            // Act
+            
+            // Assert
+        }
     }
 }
