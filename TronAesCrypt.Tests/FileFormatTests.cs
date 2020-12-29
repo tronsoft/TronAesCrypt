@@ -82,6 +82,19 @@ namespace TRONSoft.TronAesCrypt.Main
         }
 
         [TestMethod]
+        public void WriteAMediumFile()
+        {
+            // Arrange
+            var encryptedFile = @"e:\tmp\med.aes";
+            File.Delete(encryptedFile);
+            new AesCrypt().EncryptFile(@"e:\tmp\med", encryptedFile, "foopassword!1$A", 64 * 1024);
+            
+            // Act
+            
+            // Assert
+        }
+        
+        [TestMethod]
         public void WriteAnEmptyFile()
         {
             // Arrange
