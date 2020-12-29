@@ -108,13 +108,10 @@ namespace TRONSoft.TronAesCrypt.Core
             outStream.Write(hmac1.ComputeHash(encryptedMainKeyIv));
 
             // Encrypt the 'real' data.
-            // var (fileSize, hmac0Value) = EncryptData(inStream, outStream, internalKey, iv0Data, bufferSize);
-            // outStream.WriteByte(fileSize);
-            // outStream.Write(hmac0Value);
+            var (fileSize, hmac0Value) = EncryptData(inStream, outStream, internalKey, iv0Data, bufferSize);
+            outStream.WriteByte(fileSize);
+            outStream.Write(hmac0Value);
             
-            using var hmac0 = new HMACSHA256(internalKey);
-            outStream.WriteByte(0);
-            outStream.Write(hmac0.ComputeHash(new byte[0]));
             outStream.Position = 0;
         }
 
