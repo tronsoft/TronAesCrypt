@@ -85,12 +85,12 @@ namespace TRONSoft.TronAesCrypt.Core
                 throw new ArgumentException("The password is too long.");
             }
 
-            var iv0Data = new byte[16]; //GenerateRandomSalt();
-            var iv1MainKey = new byte[16]; //GenerateRandomSalt();
+            var iv0Data = GenerateRandomSalt();
+            var iv1MainKey = GenerateRandomSalt();
             var key = StretchPassword(password, iv1MainKey);
 
             // create hmac for cipher text
-            var internalKey = new byte[32]; //GenerateRandomSalt(32);
+            var internalKey = GenerateRandomSalt(32);
             
             // encrypt the main key and iv
             var encryptedMainKeyIv = EncryptMainKeyAndIV(key, iv1MainKey, internalKey, iv0Data);
@@ -139,13 +139,14 @@ namespace TRONSoft.TronAesCrypt.Core
                 }
             }
 
+            cryptoStream.FlushFinalBlock();
+            cryptoStream.Close();
+            
             var myarr = ms.ToArray();
             using var hmac0 = new HMACSHA256(internalKey);
-            var hmacValue = hmac0.ComputeHash(ms);
+            var hmacValue = hmac0.ComputeHash(myarr);
             ms.Position = 0;
             outStream.Write(myarr);
-            
-            cryptoStream.Close();
 
             return ((byte) lastDataReadSize, hmacValue);
         }

@@ -1,4 +1,7 @@
 using System.IO;
+using System.Linq;
+using System.Runtime.Intrinsics.Arm;
+using System.Security.Cryptography;
 using System.Text;
 using AutoFixture;
 using FluentAssertions;
@@ -69,12 +72,25 @@ namespace TRONSoft.TronAesCrypt.Main
         public void WriteAFile()
         {
             // Arrange
-            var encryptedFile = @"e:\tmp\input.txt.aes";
+            var encryptedFile = @"e:\tmp\block.aes";
             File.Delete(encryptedFile);
-            new AesCrypt().EncryptFile(@"e:\tmp\input.txt", encryptedFile, "foopassword!1$A", 64 * 1024);
+            new AesCrypt().EncryptFile(@"e:\tmp\block", encryptedFile, "foopassword!1$A", 64 * 1024);
             
             // Act
             
+            // Assert
+        }
+
+        [TestMethod]
+        public void WriteAnEmptyFile()
+        {
+            // Arrange
+            var encryptedFile = @"e:\tmp\empty.txt.aes";
+            File.Delete(encryptedFile);
+
+            // Act
+            new AesCrypt().EncryptFile(@"e:\tmp\empty.txt", encryptedFile, "foopassword!1$A", 64 * 1024);
+
             // Assert
         }
     }
