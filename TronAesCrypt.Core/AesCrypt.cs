@@ -1,26 +1,26 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace TRONSoft.TronAesCrypt.Core
 {
     public class AesCrypt
     {
         // AES block size in bytes
-        public const int AesBlockSize = 16;
+        private const int AesBlockSize = 16;
 
         /// <summary>
         ///     The size of the key. For AES-256 that is 256/8 = 32
         /// </summary>
-        public const int KeySize = 32;
+        private const int KeySize = 32;
 
         // encryption/decryption buffer size - 64K
         public const int BufferSize = 64 * 1024;
+        public const string Version = "0.1.0";
+        public const string AppName = "TronAesCrypt";
 
         // maximum password length (number of chars)
-        public const int MaxPassLen = 1024;
+        private const int MaxPassLen = 1024;
 
         private static readonly byte[] AesHeader = "AES".GetUtf8Bytes();
 
@@ -154,9 +154,8 @@ namespace TRONSoft.TronAesCrypt.Core
             }
 
             hmac0.TransformFinalBlock(new byte[0], 0, 0);
-            var hmacValue = hmac0.Hash;
 
-            return ((byte) lastDataReadSize, hmacValue);
+            return ((byte) lastDataReadSize, hmac0.Hash);
         }
 
         private static RijndaelManaged CreateAes(string password, byte[] iv)
@@ -196,7 +195,7 @@ namespace TRONSoft.TronAesCrypt.Core
         {
             // Created-by extensions
             var createdBy = "CREATED_BY";
-            var appName = "pyAesCrypt 0.4.3"; //"TronAesCrypt";
+            var appName = $"{AppName} {Version}";
 
             // Write CREATED_BY extension length
             outStream.WriteByte(0);
@@ -258,14 +257,12 @@ namespace TRONSoft.TronAesCrypt.Core
             for (var i = 0; i < 8192; i++)
             {
                 hash.Initialize();
-                hash.TransformBlock(key, 0, key.Length, key, 0);
+                hash.TransformBlock(key!, 0, key.Length, key, 0);
                 hash.TransformFinalBlock(passwordBytes, 0, passwordBytes.Length);
                 key = hash.Hash;
             }
             
             return key;
         }
-        
-        
     }
 }

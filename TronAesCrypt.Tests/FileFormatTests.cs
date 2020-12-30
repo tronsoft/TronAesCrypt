@@ -1,8 +1,4 @@
 using System.IO;
-using System.Linq;
-using System.Runtime.Intrinsics.Arm;
-using System.Security.Cryptography;
-using System.Text;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -13,8 +9,9 @@ namespace TRONSoft.TronAesCrypt.Main
     [TestClass]
     public class FileFormatTests
     {
+        private const string Password = "Password1234";
         private static readonly string CreatedBy = "CREATED_BY";
-        private static readonly string AppName = "TronAesCrypt";
+        private static readonly string AppName = $"{AesCrypt.AppName} {AesCrypt.Version}";
         
         private Fixture _fixture;
         
@@ -57,7 +54,7 @@ namespace TRONSoft.TronAesCrypt.Main
             buf.GetUtf8String().Should().Be(AppName, "This is in the standard");
             
             outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(80, "This is in the standard");
+            outStream.ReadByte().Should().Be(128, "This is in the standard");
 
             for (var i = 0; i < 128; i++)
             {
@@ -74,10 +71,10 @@ namespace TRONSoft.TronAesCrypt.Main
             // Arrange
             var encryptedFile = @"e:\tmp\block.aes";
             File.Delete(encryptedFile);
-            new AesCrypt().EncryptFile(@"e:\tmp\block", encryptedFile, "foopassword!1$A", 64 * 1024);
-            
+
             // Act
-            
+            new AesCrypt().EncryptFile(@"e:\tmp\block", encryptedFile, Password, 64 * 1024);
+
             // Assert
         }
 
@@ -87,9 +84,9 @@ namespace TRONSoft.TronAesCrypt.Main
             // Arrange
             var encryptedFile = @"e:\tmp\med.aes";
             File.Delete(encryptedFile);
-            new AesCrypt().EncryptFile(@"e:\tmp\med", encryptedFile, "foopassword!1$A", 64 * 1024);
             
             // Act
+            new AesCrypt().EncryptFile(@"e:\tmp\med", encryptedFile, Password, 64 * 1024);
             
             // Assert
         }
@@ -102,7 +99,7 @@ namespace TRONSoft.TronAesCrypt.Main
             File.Delete(encryptedFile);
 
             // Act
-            new AesCrypt().EncryptFile(@"e:\tmp\empty.txt", encryptedFile, "foopassword!1$A", 64 * 1024);
+            new AesCrypt().EncryptFile(@"e:\tmp\empty.txt", encryptedFile, Password, 64 * 1024);
 
             // Assert
         }
