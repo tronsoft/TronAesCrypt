@@ -1,4 +1,7 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,11 +17,39 @@ namespace TRONSoft.TronAesCrypt.Main
         private static readonly string AppName = $"{AesCrypt.AppName} {AesCrypt.Version}";
         
         private Fixture _fixture;
+        private string _workingDir;
+
+        private Dictionary<string, int> _fileInfo = new Dictionary<string, int>
+        {
+            ["empty"] = 0,
+            ["xs"] = 16,
+            ["s"] = 230,
+            ["l"] = 143526,
+            ["xl"] = 1616161,
+            ["xxl"] = 46851123
+        };
         
         [TestInitialize]
         public void Setup()
         {
+            AesCryptProcessRunner.CanAesCryptRun().Should().BeTrue("AesCrypt must be in %PATH%");
+            
             _fixture = new Fixture();
+            _workingDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
+            if (Directory.Exists(_workingDir))
+            {
+                Directory.Delete(_workingDir, recursive: true);
+            }
+            Directory.CreateDirectory(_workingDir);
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            if (Directory.Exists(_workingDir))
+            {
+                Directory.Delete(_workingDir, recursive: true);
+            }
         }
         
         [TestMethod]
@@ -66,42 +97,30 @@ namespace TRONSoft.TronAesCrypt.Main
         }
         
         [TestMethod]
-        public void WriteAFile()
+        public async Task CheckEncryptionFile()
         {
-            // Arrange
-            var encryptedFile = @"e:\tmp\block.aes";
-            File.Delete(encryptedFile);
+            foreach (var info in _fileInfo)
+            {
+                // Arrange
+                var file = Path.Combine(_workingDir, info.Key);
+                await using var fs = File.Create(file);
+                if (info.Value > 0)
+                {
+                    await fs.WriteAsync(AesCrypt.GenerateRandomSalt(info.Value));
+                }
+                await fs.FlushAsync();
+                fs.Close();
 
-            // Act
-            new AesCrypt().EncryptFile(@"e:\tmp\block", encryptedFile, Password, 64 * 1024);
+                var encryptedFileName = $"{info.Key}.aes";
+                var encryptedFile = Path.Combine(_workingDir, encryptedFileName);
 
-            // Assert
-        }
+                // Act
+                new AesCrypt().EncryptFile(file, encryptedFile, Password, 64 * 1024);
 
-        [TestMethod]
-        public void WriteAMediumFile()
-        {
-            // Arrange
-            var encryptedFile = @"e:\tmp\med.aes";
-            File.Delete(encryptedFile);
-            
-            // Act
-            new AesCrypt().EncryptFile(@"e:\tmp\med", encryptedFile, Password, 64 * 1024);
-            
-            // Assert
-        }
-        
-        [TestMethod]
-        public void WriteAnEmptyFile()
-        {
-            // Arrange
-            var encryptedFile = @"e:\tmp\empty.txt.aes";
-            File.Delete(encryptedFile);
-
-            // Act
-            new AesCrypt().EncryptFile(@"e:\tmp\empty.txt", encryptedFile, Password, 64 * 1024);
-
-            // Assert
+                // Assert
+                var canDecrypt = await AesCryptProcessRunner.CanDecrypt(encryptedFile, Path.Combine(_workingDir, $"{info.Key}.aescrypt.aes"), Password);
+                canDecrypt.Should().BeTrue($"the encrypted file {encryptedFileName} is AesCrypt encrypted");
+            }
         }
     }
 }

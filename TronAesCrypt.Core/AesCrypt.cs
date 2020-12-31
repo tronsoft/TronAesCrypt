@@ -158,6 +158,24 @@ namespace TRONSoft.TronAesCrypt.Core
             return ((byte) lastDataReadSize, hmac0.Hash);
         }
 
+        /// <summary>
+        ///     Creates a random salt that will be used to encrypt your file. This method is required on FileEncrypt.
+        /// </summary>
+        /// <returns></returns>
+        public static byte[] GenerateRandomSalt(int size = AesBlockSize)
+        {
+            if (size < 1)
+            {
+                throw new ArgumentException("Size must be greater or equal to 1");
+            }
+            
+            var data = new byte[size];
+            using var rng = new RNGCryptoServiceProvider();
+            rng.GetBytes(data);
+             
+            return data;
+        }
+
         private static RijndaelManaged CreateAes(string password, byte[] iv)
         {
             return CreateAes(password.GetUtf8Bytes(), iv);
@@ -229,24 +247,6 @@ namespace TRONSoft.TronAesCrypt.Core
             return msEncrypt.ToArray();
         }
 
-        /// <summary>
-        ///     Creates a random salt that will be used to encrypt your file. This method is required on FileEncrypt.
-        /// </summary>
-        /// <returns></returns>
-        private static byte[] GenerateRandomSalt(int size = AesBlockSize)
-        {
-             if (size < 1)
-             {
-                 throw new ArgumentException("Size must be greater or equal to 1");
-             }
-            
-             var data = new byte[size];
-             using var rng = new RNGCryptoServiceProvider();
-             rng.GetBytes(data);
-             
-             return data;
-        }
-        
         private byte[] StretchPassword(string password, byte[] iv)
         {
             var passwordBytes = password.GetUtf16Bytes();
