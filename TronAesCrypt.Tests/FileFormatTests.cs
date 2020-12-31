@@ -102,15 +102,7 @@ namespace TRONSoft.TronAesCrypt.Main
             foreach (var info in _fileInfo)
             {
                 // Arrange
-                var file = Path.Combine(_workingDir, info.Key);
-                await using var fs = File.Create(file);
-                if (info.Value > 0)
-                {
-                    await fs.WriteAsync(AesCrypt.GenerateRandomSalt(info.Value));
-                }
-                await fs.FlushAsync();
-                fs.Close();
-
+                var file = await WriteFileToWorkingDirectory(info.Key, info.Value);
                 var encryptedFileName = $"{info.Key}.aes";
                 var encryptedFile = Path.Combine(_workingDir, encryptedFileName);
 
@@ -121,6 +113,47 @@ namespace TRONSoft.TronAesCrypt.Main
                 var canDecrypt = await AesCryptProcessRunner.CanDecrypt(encryptedFile, Path.Combine(_workingDir, $"{info.Key}.aescrypt.aes"), Password);
                 canDecrypt.Should().BeTrue($"the encrypted file {encryptedFileName} is AesCrypt encrypted");
             }
+        }
+
+        [TestMethod]
+        public void TheHeaderShouldBeReadCorrectly()
+        {
+            using var inStream = new MemoryStream();
+            using var outStream = new MemoryStream();
+            var cryptor = new AesCrypt();
+            cryptor.EncryptStream(inStream, outStream, Password, 64 * 1024);
+            
+            // Act & Assert
+            cryptor.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
+        }
+        
+        [TestMethod]
+        public async Task TheStreamShouldBeDecryptedCorrectly()
+        {
+            const string fileName = "info";
+            var file = await WriteFileToWorkingDirectory(fileName, 16);
+            var encryptedFileName = $"{fileName}.aes";
+            var encryptedFile = Path.Combine(_workingDir, encryptedFileName);
+            var cryptor = new AesCrypt();
+            cryptor.EncryptFile(file, encryptedFile, Password, 64 * 1024);
+            
+            // Act & Assert
+            await using var encFileStream = File.OpenRead(encryptedFile);
+            cryptor.DecryptStream(encFileStream, new MemoryStream(), Password, 64 * 1024);
+        }
+
+        private async Task<string> WriteFileToWorkingDirectory(string fileName, int fileSize = 0)
+        {
+            var file = Path.Combine(_workingDir, fileName);
+            await using var fs = File.Create(file);
+            if (fileSize > 0)
+            {
+                await fs.WriteAsync(AesCrypt.GenerateRandomSalt(fileSize));
+            }
+
+            await fs.FlushAsync();
+            fs.Close();
+            return file;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace TRONSoft.TronAesCrypt.Core
@@ -22,7 +23,7 @@ namespace TRONSoft.TronAesCrypt.Core
         // maximum password length (number of chars)
         private const int MaxPassLen = 1024;
 
-        private static readonly byte[] AesHeader = "AES".GetUtf8Bytes();
+        private static readonly string AesHeader = "AES";
 
         public void EncryptFile(string inputFileName, string outputFileName, string password, int bufferSize)
         {
@@ -33,6 +34,64 @@ namespace TRONSoft.TronAesCrypt.Core
             inputStream.Close();
             outputStream.Flush();
             outputStream.Close();
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="inStream">The input stream.</param>
+        /// <param name="outStream">The aescrypt output stream</param>
+        /// <param name="password">The password to use for decrypting.</param>
+        /// <param name="bufferSize">
+        ///     bufferSize: encryption buffer size, must be a multiple of
+        ///     AES block size (16)
+        ///     using a larger buffer speeds up things when dealing
+        ///     with big files
+        /// </param>
+        /// <returns>The encrypted stream.</returns>
+        public void DecryptStream(Stream inStream, Stream outStream, string password, int bufferSize)
+        {
+            // Validate the buffer size 
+            if (bufferSize % AesBlockSize != 0)
+            {
+                throw new ArgumentException("Buffer size must be a multiple of AES block size.");
+            }
+                        
+            // Validate password  length
+            if (password.Length > MaxPassLen)
+            {
+                throw new ArgumentException("The password is too long.");
+            }
+            
+            // Write header.
+            var buffer = new byte[3];
+            inStream.Read(buffer);
+
+            if (!buffer.GetUtf8String().Equals(AesHeader))
+            {
+                throw new InvalidOperationException(Resources.NotAnAescryptFile);
+            }
+
+            ReadHeader(inStream);
+            
+            // read the iv used to encrypt the main iv and the encryption key
+            var ivMain = ReadBytes(inStream, 16);
+
+            var key = StretchPassword(password, ivMain);
+
+            // read encrypted main iv and key
+            var mainKeyAndIvRead = ReadBytes(inStream, 48);
+
+            using var hmac1 = new HMACSHA256(key);
+            var hmacMainIvAndKeyActual = hmac1.ComputeHash(mainKeyAndIvRead);
+
+            // read HMAC-SHA256 of the encrypted iv and key
+            var hmacMainKeyAndIvRead = ReadBytes(inStream, 32);
+            if (buffer.SequenceEqual(hmacMainIvAndKeyActual))
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+
+            var (dataIv, internalKey) = DecryptMainKeyAndIV(key, ivMain, hmacMainKeyAndIvRead);
         }
 
         public FileStream Decrypt(string encryptedFileName, string decryptedFileName, string password)
@@ -85,30 +144,30 @@ namespace TRONSoft.TronAesCrypt.Core
                 throw new ArgumentException("The password is too long.");
             }
 
-            var iv0Data = GenerateRandomSalt();
-            var iv1MainKey = GenerateRandomSalt();
-            var key = StretchPassword(password, iv1MainKey);
+            var ivData = GenerateRandomSalt();
+            var ivMainKey = GenerateRandomSalt();
+            var key = StretchPassword(password, ivMainKey);
 
             // create hmac for cipher text
             var internalKey = GenerateRandomSalt(32);
             
             // encrypt the main key and iv
-            var encryptedMainKeyIv = EncryptMainKeyAndIV(key, iv1MainKey, internalKey, iv0Data);
+            var encryptedMainKeyIv = EncryptMainKeyAndIV(key, ivMainKey, internalKey, ivData);
 
             WriteHeader(outStream);
 
             // write the iv used to encrypt the main iv and the encryption key
-            outStream.Write(iv1MainKey);
+            outStream.Write(ivMainKey);
 
             // write encrypted main iv and key
             outStream.Write(encryptedMainKeyIv);
 
             // write HMAC-SHA256 of the encrypted iv and key
-            using var hmac1 = new HMACSHA256(key);
-            outStream.Write(hmac1.ComputeHash(encryptedMainKeyIv));
+            using var hmacMainKeyIv = new HMACSHA256(key);
+            outStream.Write(hmacMainKeyIv.ComputeHash(encryptedMainKeyIv));
 
             // Encrypt the 'real' data.
-            var (fileSize, hmac0Value) = EncryptData(inStream, outStream, internalKey, iv0Data, bufferSize);
+            var (fileSize, hmac0Value) = EncryptData(inStream, outStream, internalKey, ivData, bufferSize);
             
             outStream.WriteByte(fileSize);
             outStream.Write(hmac0Value);
@@ -197,7 +256,7 @@ namespace TRONSoft.TronAesCrypt.Core
         private static void WriteHeader(Stream outStream)
         {
             // Write header.
-            outStream.Write(AesHeader);
+            outStream.Write(AesHeader.GetUtf8Bytes());
 
             // write version (AES Crypt version 2 file format -
             // see https://www.aescrypt.com/aes_file_format.html)
@@ -239,12 +298,29 @@ namespace TRONSoft.TronAesCrypt.Core
         {
             using var cipher = CreateAes(key, iv);
             using var msEncrypt = new MemoryStream();
-            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Write);
+            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true);
             cryptoStream.Write(ivInternal);
             cryptoStream.Write(internalKey);
             cryptoStream.FlushFinalBlock();
+            cryptoStream.Close();
 
             return msEncrypt.ToArray();
+        }
+        
+        private (byte[], byte[]) DecryptMainKeyAndIV(byte[] key, byte[] iv, byte[] encryptedMainKeyIv)
+        {
+            using var cipher = CreateAes(key, iv);
+            using var msEncrypt = new MemoryStream(encryptedMainKeyIv);
+            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Read);
+            
+            var ivInternal = new byte[16];
+            cryptoStream.Read(ivInternal);
+
+            var internalKey = new byte[32];
+            cryptoStream.Read(internalKey);
+            cryptoStream.Close();
+
+            return (ivInternal, internalKey);
         }
 
         private byte[] StretchPassword(string password, byte[] iv)
@@ -263,6 +339,48 @@ namespace TRONSoft.TronAesCrypt.Core
             }
             
             return key;
+        }
+
+        private static void ReadHeader(Stream inStream)
+        {
+            // write version (AES Crypt version 2 file format -
+            // see https://www.aescrypt.com/aes_file_format.html)
+            var version = inStream.ReadByte();
+            if (version != 2)
+            {
+                throw new InvalidOperationException(Resources.OnlyAesCryptVersion2IsSupported);
+            }
+
+            // Read reserved byte.
+            inStream.ReadByte();
+
+            // Read the extensions
+            var buffer = new byte[2];
+            while (true)
+            {
+                var bytesRead = inStream.Read(buffer);
+                if (bytesRead != 2)
+                {
+                    throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+                }
+
+                if (buffer[0] == 0 && buffer[1] == 0)
+                {
+                    break;
+                }
+            }
+        }
+
+        private static byte[] ReadBytes(Stream outStream, int bufferSize)
+        {
+            var buffer = new byte[bufferSize];
+            var bytesRead = outStream.Read(buffer);
+            if (bytesRead != bufferSize)
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+
+            return buffer;
         }
     }
 }
