@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
@@ -14,12 +13,12 @@ namespace TRONSoft.TronAesCrypt.Main
     {
         private const string Password = "Password1234";
         private static readonly string CreatedBy = "CREATED_BY";
-        private static readonly string AppName = $"{AesCrypt.AppName} {AesCrypt.Version}";
-        
+        private static readonly string AppName = $"{AesCryptHeader.AppName} {AesCryptHeader.Version}";
+
         private Fixture _fixture;
         private string _workingDir;
 
-        private Dictionary<string, int> _fileInfo = new Dictionary<string, int>
+        private readonly Dictionary<string, int> _fileInfo = new()
         {
             ["empty"] = 0,
             ["xs"] = 16,
@@ -28,12 +27,12 @@ namespace TRONSoft.TronAesCrypt.Main
             ["xl"] = 1616161,
             ["xxl"] = 46851123
         };
-        
+
         [TestInitialize]
         public void Setup()
         {
             AesCryptProcessRunner.CanAesCryptRun().Should().BeTrue("AesCrypt must be in %PATH%");
-            
+
             _fixture = new Fixture();
             _workingDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
             if (Directory.Exists(_workingDir))
@@ -51,19 +50,19 @@ namespace TRONSoft.TronAesCrypt.Main
                 Directory.Delete(_workingDir, recursive: true);
             }
         }
-        
+
         [TestMethod]
         public void TheHeaderIsCorrectlyWritten()
         {
             // Arrange
-            var cryptor = new AesCrypt();
+            var crypter = new AesCrypt();
             using var inStream = new MemoryStream();
             using var outStream = new MemoryStream();
             var password = _fixture.Create<string>();
             int bufferSize = 16;
 
             // Act
-            cryptor.EncryptStream(inStream, outStream, password, bufferSize);
+            crypter.EncryptStream(inStream, outStream, password, bufferSize);
 
             // Assert
             var buf = new byte[3];
@@ -73,17 +72,17 @@ namespace TRONSoft.TronAesCrypt.Main
             outStream.ReadByte().Should().Be(0, "This is in the standard");
             outStream.ReadByte().Should().Be(0, "This is in the standard");
             outStream.ReadByte().Should().Be((CreatedBy + AppName).Length + 1, "This is in the standard");
-            
+
             buf = new byte[CreatedBy.Length];
             outStream.Read(buf, 0, buf.Length);
             buf.GetUtf8String().Should().Be(CreatedBy, "This is in the standard");
-            
+
             outStream.ReadByte().Should().Be(0, "This is in the standard");
-            
+
             buf = new byte[AppName.Length];
             outStream.Read(buf, 0, buf.Length);
             buf.GetUtf8String().Should().Be(AppName, "This is in the standard");
-            
+
             outStream.ReadByte().Should().Be(0, "This is in the standard");
             outStream.ReadByte().Should().Be(128, "This is in the standard");
 
@@ -91,11 +90,11 @@ namespace TRONSoft.TronAesCrypt.Main
             {
                 outStream.ReadByte().Should().Be(0, "This is in the standard");
             }
-            
+
             outStream.ReadByte().Should().Be(0, "This is in the standard");
             outStream.ReadByte().Should().Be(0, "This is in the standard");
         }
-        
+
         [TestMethod]
         public async Task CheckEncryptionFile()
         {
@@ -120,26 +119,33 @@ namespace TRONSoft.TronAesCrypt.Main
         {
             using var inStream = new MemoryStream();
             using var outStream = new MemoryStream();
-            var cryptor = new AesCrypt();
-            cryptor.EncryptStream(inStream, outStream, Password, 64 * 1024);
-            
+            var crypter = new AesCrypt();
+            crypter.EncryptStream(inStream, outStream, Password, 64 * 1024);
+
             // Act & Assert
-            cryptor.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
+            crypter.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
         }
-        
+
         [TestMethod]
         public async Task TheStreamShouldBeDecryptedCorrectly()
         {
-            const string fileName = "info";
-            var file = await WriteFileToWorkingDirectory(fileName, 16);
-            var encryptedFileName = $"{fileName}.aes";
-            var encryptedFile = Path.Combine(_workingDir, encryptedFileName);
-            var cryptor = new AesCrypt();
-            cryptor.EncryptFile(file, encryptedFile, Password, 64 * 1024);
-            
-            // Act & Assert
-            await using var encFileStream = File.OpenRead(encryptedFile);
-            cryptor.DecryptStream(encFileStream, new MemoryStream(), Password, 64 * 1024);
+            foreach (var info in _fileInfo)
+            {
+                // Arrange
+                var fileName = Path.Combine(_workingDir, info.Key);
+                var file = await WriteFileToWorkingDirectory(fileName, info.Value);
+                var encryptedFileName = Path.Combine(_workingDir, $"{fileName}.aes");
+                var decryptedFileName = Path.Combine(_workingDir, $"{fileName}-decrypted.txt");
+
+                // Act
+                var crypter = new AesCrypt();
+                crypter.EncryptFile(file, encryptedFileName, Password, 64 * 1024);
+                crypter.DecryptFile(encryptedFileName, decryptedFileName, Password, 64 * 1024);
+
+                // Assert
+                fileName.AsSha256OfFile().Should().Be(decryptedFileName.AsSha256OfFile(), "the files are the same");
+
+            }
         }
 
         private async Task<string> WriteFileToWorkingDirectory(string fileName, int fileSize = 0)
@@ -148,7 +154,7 @@ namespace TRONSoft.TronAesCrypt.Main
             await using var fs = File.Create(file);
             if (fileSize > 0)
             {
-                await fs.WriteAsync(AesCrypt.GenerateRandomSalt(fileSize));
+                await fs.WriteAsync(RandomSaltGenerator.Generate(fileSize));
             }
 
             await fs.FlushAsync();
