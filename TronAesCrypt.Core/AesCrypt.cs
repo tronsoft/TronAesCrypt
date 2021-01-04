@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace TRONSoft.TronAesCrypt.Core
@@ -14,15 +15,10 @@ namespace TRONSoft.TronAesCrypt.Core
         /// </summary>
         private const int KeySize = 32;
 
-        // encryption/decryption buffer size - 64K
-        public const int BufferSize = 64 * 1024;
-        public const string Version = "0.1.0";
-        public const string AppName = "TronAesCrypt";
-
         // maximum password length (number of chars)
         private const int MaxPassLen = 1024;
 
-        private static readonly byte[] AesHeader = "AES".GetUtf8Bytes();
+        private readonly AesCryptHeader _aesCryptHeader = new();
 
         public void EncryptFile(string inputFileName, string outputFileName, string password, int bufferSize)
         {
@@ -35,35 +31,23 @@ namespace TRONSoft.TronAesCrypt.Core
             outputStream.Close();
         }
 
-        public FileStream Decrypt(string encryptedFileName, string decryptedFileName, string password)
+        public void DecryptFile(string inputFileName, string outputFileName, string password, int bufferSize)
         {
-            using var encryptedFile = new FileStream(encryptedFileName, FileMode.Open);
+            using var inputStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read);
+            using var outputStream = new FileStream(outputFileName, FileMode.OpenOrCreate, FileAccess.Write);
+            DecryptStream(inputStream, outputStream, password, bufferSize);
 
-            // read the salt
-            var salt = new byte[32];
-            encryptedFile.Read(salt, 0, salt.Length);
-
-            using var aes = CreateAes(password, salt);
-            using var cryptoStream = new CryptoStream(encryptedFile, aes.CreateDecryptor(), CryptoStreamMode.Read);
-            var decryptedFile = new FileStream(decryptedFileName, FileMode.Create);
-
-            int read;
-            var buffer = new byte[1024 * 1024];
-            while ((read = cryptoStream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                decryptedFile.Write(buffer, 0, read);
-            }
-
-            cryptoStream.Close();
-
-            return decryptedFile;
+            inputStream.Close();
+            outputStream.Flush();
+            outputStream.Close();
         }
 
         /// <summary>
+        /// Decrypt the stream
         /// </summary>
         /// <param name="inStream">The input stream.</param>
-        /// <param name="outStream">The aescrypt output stream</param>
-        /// <param name="password">The password to use for encrypting.</param>
+        /// <param name="outStream">The aes crypt output stream</param>
+        /// <param name="password">The password to use for decrypting.</param>
         /// <param name="bufferSize">
         ///     bufferSize: encryption buffer size, must be a multiple of
         ///     AES block size (16)
@@ -71,9 +55,9 @@ namespace TRONSoft.TronAesCrypt.Core
         ///     with big files
         /// </param>
         /// <returns>The encrypted stream.</returns>
-        public void EncryptStream(Stream inStream, Stream outStream, string password, int bufferSize)
+        public void DecryptStream(Stream inStream, Stream outStream, string password, int bufferSize)
         {
-            // Validate the buffer size 
+            // Validate the buffer size
             if (bufferSize % AesBlockSize != 0)
             {
                 throw new ArgumentException("Buffer size must be a multiple of AES block size.");
@@ -85,40 +69,91 @@ namespace TRONSoft.TronAesCrypt.Core
                 throw new ArgumentException("The password is too long.");
             }
 
-            var iv0Data = GenerateRandomSalt();
-            var iv1MainKey = GenerateRandomSalt();
-            var key = StretchPassword(password, iv1MainKey);
+            // Write header.
+            _aesCryptHeader.ReadHeader(inStream);
+
+            // read the iv used to encrypt the main iv and the encryption key
+            var ivMain = ReadBytes(inStream, 16);
+
+            var key = StretchPassword(password, ivMain);
+
+            // read encrypted main iv and key
+            var mainKeyAndIvRead = ReadBytes(inStream, 48);
+
+            using var hmac1 = new HMACSHA256(key);
+            var hmacMainIvAndKeyActual = hmac1.ComputeHash(mainKeyAndIvRead);
+
+            // read HMAC-SHA256 of the encrypted iv and key
+            var hmacMainKeyAndIvRead = ReadBytes(inStream, 32);
+            if (!hmacMainKeyAndIvRead.SequenceEqual(hmacMainIvAndKeyActual))
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+
+            DecryptData(inStream, outStream, key, ivMain, mainKeyAndIvRead, bufferSize);
+        }
+
+        /// <summary>
+        /// Encrypt the stream
+        /// </summary>
+        /// <param name="inStream">The input stream.</param>
+        /// <param name="outStream">The aes crypt output stream</param>
+        /// <param name="password">The password to use for encrypting.</param>
+        /// <param name="bufferSize">
+        ///     bufferSize: encryption buffer size, must be a multiple of
+        ///     AES block size (16)
+        ///     using a larger buffer speeds up things when dealing
+        ///     with big files
+        /// </param>
+        /// <returns>The encrypted stream.</returns>
+        public void EncryptStream(Stream inStream, Stream outStream, string password, int bufferSize)
+        {
+            // Validate the buffer size
+            if (bufferSize % AesBlockSize != 0)
+            {
+                throw new ArgumentException("Buffer size must be a multiple of AES block size.");
+            }
+
+            // Validate password  length
+            if (password.Length > MaxPassLen)
+            {
+                throw new ArgumentException("The password is too long.");
+            }
+
+            var ivData = RandomSaltGenerator.Generate();
+            var ivMainKey = RandomSaltGenerator.Generate();
+            var key = StretchPassword(password, ivMainKey);
 
             // create hmac for cipher text
-            var internalKey = GenerateRandomSalt(32);
-            
-            // encrypt the main key and iv
-            var encryptedMainKeyIv = EncryptMainKeyAndIV(key, iv1MainKey, internalKey, iv0Data);
+            var internalKey = RandomSaltGenerator.Generate(32);
 
-            WriteHeader(outStream);
+            // encrypt the main key and iv
+            var encryptedMainKeyIv = EncryptMainKeyAndIv(key, ivMainKey, internalKey, ivData);
+
+            _aesCryptHeader.WriteHeader(outStream);
 
             // write the iv used to encrypt the main iv and the encryption key
-            outStream.Write(iv1MainKey);
+            outStream.Write(ivMainKey);
 
             // write encrypted main iv and key
             outStream.Write(encryptedMainKeyIv);
 
             // write HMAC-SHA256 of the encrypted iv and key
-            using var hmac1 = new HMACSHA256(key);
-            outStream.Write(hmac1.ComputeHash(encryptedMainKeyIv));
+            using var hmacMainKeyIv = new HMACSHA256(key);
+            outStream.Write(hmacMainKeyIv.ComputeHash(encryptedMainKeyIv));
 
             // Encrypt the 'real' data.
-            var (fileSize, hmac0Value) = EncryptData(inStream, outStream, internalKey, iv0Data, bufferSize);
-            
+            var (fileSize, hmac0Value) = EncryptData(inStream, outStream, internalKey, ivData, bufferSize);
+
             outStream.WriteByte(fileSize);
             outStream.Write(hmac0Value);
-            
+
             outStream.Position = 0;
         }
 
         private static (byte, byte[]) EncryptData(Stream inStream, Stream outStream, byte[] internalKey, byte[] iv, int bufferSize)
         {
-           var lastDataReadSize = 0; // File size modulo 16 in least significant bit positions
+            var lastDataReadSize = 0; // File size modulo 16 in least significant byte positions
             using var cipher = CreateAes(internalKey, iv);
             using var ms = new MemoryStream();
             using var cryptoStream = new CryptoStream(ms, cipher.CreateEncryptor(), CryptoStreamMode.Write, true);
@@ -143,117 +178,126 @@ namespace TRONSoft.TronAesCrypt.Core
             cryptoStream.FlushFinalBlock();
             cryptoStream.Close();
             ms.Position = 0;
-            
+
             using var hmac0 = new HMACSHA256(internalKey);
             hmac0.Initialize();
-            
+
             while ((bytesRead = ms.Read(buffer, 0, buffer.Length)) > 0)
             {
                 outStream.Write(buffer, 0, bytesRead);
                 hmac0.TransformBlock(buffer, 0, bytesRead, null, 0);
             }
 
-            hmac0.TransformFinalBlock(new byte[0], 0, 0);
+            hmac0.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
-            return ((byte) lastDataReadSize, hmac0.Hash);
+            return ((byte)lastDataReadSize, hmac0.Hash);
         }
 
-        private static RijndaelManaged CreateAes(string password, byte[] iv)
+        private static void DecryptData(Stream inStream, Stream outStream, byte[] key, byte[] ivMain, byte[] mainKeyAndIv, int bufferSize)
         {
-            return CreateAes(password.GetUtf8Bytes(), iv);
-        }
+            var (dataIv, internalKey) = DecryptMainKeyAndIv(key, ivMain, mainKeyAndIv);
+            var currentPosition = inStream.Position;
+            var endPositionEncryptedData = inStream.Length - 32 - 1;
 
-        private static RijndaelManaged CreateAes(byte[] key, byte[] iv)
-        {
-            return new RijndaelManaged
+            // Get padding and hmac
+            inStream.Position = endPositionEncryptedData;
+            var padding = (16 - ReadBytes(inStream, 1)[0]) % 16;
+            var hmacEncryptedData = ReadBytes(inStream, 32);
+
+            // Reset the position to the beginning of the encrypted data
+            inStream.Position = currentPosition;
+
+            // Get hmac
+            using var hmac0 = new HMACSHA256(internalKey);
+            hmac0.Initialize();
+
+            // Get the cipher
+            using var cipher = CreateAes(internalKey, dataIv);
+            using var decrypter = cipher.CreateDecryptor();
+
+            // First read as much data as possible.
+            ReadEncryptedBytes(bufferSize);
+
+            // read the remaining
+            ReadEncryptedBytes();
+
+            // Everything read but the last block need to remove padding
+            if (inStream.Position != endPositionEncryptedData)
             {
-                KeySize = KeySize * 8,
-                BlockSize = AesBlockSize * 8,
-                Padding = PaddingMode.None, //.PKCS7, // of moet dit none zijn?
-                Mode = CipherMode.CBC,
-                Key = key,
-                IV = iv
-            };
+                var lastBlock = ReadBytes(inStream, AesBlockSize);
+                hmac0.TransformBlock(lastBlock, 0, lastBlock.Length, null, 0);
+
+                decrypter.TransformBlock(lastBlock, 0, lastBlock.Length, lastBlock, 0);
+                outStream.Write(lastBlock, 0, lastBlock.Length - padding);
+            }
+
+            decrypter.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            hmac0.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            if (!hmac0.Hash!.SequenceEqual(hmacEncryptedData))
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+
+            // Functions
+            void ReadEncryptedBytes(int bytesToRead = AesBlockSize)
+            {
+                var buffer = new byte[bytesToRead];
+                while (inStream.Position < endPositionEncryptedData - bytesToRead)
+                {
+                    var bytesRead = inStream.Read(buffer, 0, buffer.Length);
+                    hmac0.TransformBlock(buffer, 0, bytesRead, null, 0);
+                    decrypter.TransformBlock(buffer, 0, bytesRead, buffer, 0);
+                    outStream.Write(buffer);
+                }
+            }
         }
 
-        private static void WriteHeader(Stream outStream)
+        private static RijndaelManaged CreateAes(byte[] key, byte[] iv) => new()
         {
-            // Write header.
-            outStream.Write(AesHeader);
+            KeySize = KeySize * 8,
+            BlockSize = AesBlockSize * 8,
+            Padding = PaddingMode.None,
+            Mode = CipherMode.CBC,
+            Key = key,
+            IV = iv
+        };
 
-            // write version (AES Crypt version 2 file format -
-            // see https://www.aescrypt.com/aes_file_format.html)
-            outStream.WriteByte(2);
-
-            // reserved byte (set to zero)
-            outStream.WriteByte(0);
-
-            WriteExtensions(outStream);
-        }
-
-        private static void WriteExtensions(Stream outStream)
-        {
-            // Created-by extensions
-            var createdBy = "CREATED_BY";
-            var appName = $"{AppName} {Version}";
-
-            // Write CREATED_BY extension length
-            outStream.WriteByte(0);
-            outStream.WriteByte((byte) ((createdBy + appName).Length + 1));
-
-            // Write the CREATED_BY extension
-            outStream.Write(createdBy.GetUtf8Bytes());
-            outStream.WriteByte(0);
-            outStream.Write(appName.GetUtf8Bytes());
-
-            // Write extensions container
-            outStream.WriteByte(0);
-            outStream.WriteByte(128);
-
-            outStream.Write(new byte[128]);
-
-            // write end-of-extensions tag
-            outStream.WriteByte(0);
-            outStream.WriteByte(0);
-        }
-
-        private byte[] EncryptMainKeyAndIV(byte[] key, byte[] iv, byte[] internalKey, byte[] ivInternal)
+        private static byte[] EncryptMainKeyAndIv(byte[] key, byte[] iv, byte[] internalKey, byte[] ivInternal)
         {
             using var cipher = CreateAes(key, iv);
             using var msEncrypt = new MemoryStream();
-            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Write);
+            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true);
             cryptoStream.Write(ivInternal);
             cryptoStream.Write(internalKey);
             cryptoStream.FlushFinalBlock();
+            cryptoStream.Close();
 
             return msEncrypt.ToArray();
         }
 
-        /// <summary>
-        ///     Creates a random salt that will be used to encrypt your file. This method is required on FileEncrypt.
-        /// </summary>
-        /// <returns></returns>
-        private static byte[] GenerateRandomSalt(int size = AesBlockSize)
+        private static (byte[], byte[]) DecryptMainKeyAndIv(byte[] key, byte[] iv, byte[] encryptedMainKeyIv)
         {
-             if (size < 1)
-             {
-                 throw new ArgumentException("Size must be greater or equal to 1");
-             }
-            
-             var data = new byte[size];
-             using var rng = new RNGCryptoServiceProvider();
-             rng.GetBytes(data);
-             
-             return data;
+            using var cipher = CreateAes(key, iv);
+            using var msEncrypt = new MemoryStream(encryptedMainKeyIv);
+            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateDecryptor(), CryptoStreamMode.Read);
+
+            var ivInternal = new byte[16];
+            cryptoStream.Read(ivInternal);
+
+            var internalKey = new byte[32];
+            cryptoStream.Read(internalKey);
+            cryptoStream.Close();
+
+            return (ivInternal, internalKey);
         }
-        
-        private byte[] StretchPassword(string password, byte[] iv)
+
+        private static byte[] StretchPassword(string password, byte[] iv)
         {
             var passwordBytes = password.GetUtf16Bytes();
             using var hash = SHA256.Create();
             var key = new byte[KeySize];
             Array.Copy(iv, key, iv.Length);
-            
+
             for (var i = 0; i < 8192; i++)
             {
                 hash.Initialize();
@@ -261,8 +305,20 @@ namespace TRONSoft.TronAesCrypt.Core
                 hash.TransformFinalBlock(passwordBytes, 0, passwordBytes.Length);
                 key = hash.Hash;
             }
-            
+
             return key;
+        }
+
+        private static byte[] ReadBytes(Stream stream, int bufferSize)
+        {
+            var buffer = new byte[bufferSize];
+            var bytesRead = stream.Read(buffer);
+            if (bytesRead != bufferSize)
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+
+            return buffer;
         }
     }
 }
