@@ -1,5 +1,5 @@
 # TronAesCrypt
-An implementation of AesCrypt in C#
+An implementation of (AesCrypt)[https://www.aescrypt.com/] in C#. The file format is describe (here)[see https://www.aescrypt.com/aes_file_format.html].
 
 # Running tests
 The tests use AesCrypt to check the results. AesCrypt must be in the path environment variable
