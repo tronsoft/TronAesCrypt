@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
-        <RootNamespace>TRONSoft.TronAesCrypt.Main</RootNamespace>
+        <RootNamespace>TRONSoft.TronAesCrypt.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
