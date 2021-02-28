@@ -20,7 +20,7 @@ namespace TRONSoft.TronAesCrypt.Core
 
         private readonly AesCryptHeader _aesCryptHeader = new();
 
-        public void EncryptFile(string inputFileName, string outputFileName, string password, int bufferSize)
+        public void EncryptFile(string inputFileName, string outputFileName, string password, int bufferSize = 16)
         {
             using var inputStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read);
             using var outputStream = new FileStream(outputFileName, FileMode.OpenOrCreate, FileAccess.Write);
@@ -31,7 +31,7 @@ namespace TRONSoft.TronAesCrypt.Core
             outputStream.Close();
         }
 
-        public void DecryptFile(string inputFileName, string outputFileName, string password, int bufferSize)
+        public void DecryptFile(string inputFileName, string outputFileName, string password, int bufferSize = 16)
         {
             using var inputStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read);
             using var outputStream = new FileStream(outputFileName, FileMode.OpenOrCreate, FileAccess.Write);
