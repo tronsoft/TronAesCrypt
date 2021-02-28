@@ -3,6 +3,9 @@
   <PropertyGroup>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
+    <Authors>Ton de Ron</Authors>
+    <Company>TRONSoft B.V.</Company>
+    <Copyright>Copyright (c) 2020 TRONSoft B.V.</Copyright>
   </PropertyGroup>
 
 </Project>
