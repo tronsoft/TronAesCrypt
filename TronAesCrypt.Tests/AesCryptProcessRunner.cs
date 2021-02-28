@@ -18,8 +18,8 @@ namespace TRONSoft.TronAesCrypt.Main
             {
                 var startInfo = new ProcessStartInfo(AesCryptFileName)
                 {
-                    WindowStyle = ProcessWindowStyle.Hidden, 
-                    CreateNoWindow = true, 
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
                     UseShellExecute = false
                 };
                 Process.Start(startInfo);
@@ -31,7 +31,7 @@ namespace TRONSoft.TronAesCrypt.Main
             }
             return true;
         }
-        
+
         public static async Task<bool> CanDecrypt(string fileName, string outputFileName, string password, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(fileName))

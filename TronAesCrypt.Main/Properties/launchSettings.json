@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TronAesCrypt.Main": {
+      "commandName": "Project",
+      "commandLineArgs": "-e"
+    }
+  }
+}

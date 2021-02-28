@@ -1,39 +1,40 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
-        <RootNamespace>TRONSoft.TronAesCrypt.Core</RootNamespace>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageVersion>1.0.0.0</PackageVersion>
-        <Title>TronAesCrypt.Core</Title>
-        <Copyright>TRONSoft B.V.</Copyright>
-        <PackageProjectUrl>https://github.com/tronsoft/TronAesCrypt</PackageProjectUrl>
-        <PackageLicenseUrl></PackageLicenseUrl>
-        <RepositoryUrl>https://github.com/tronsoft/TronAesCrypt</RepositoryUrl>
-      <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <Description>An implementation of AesCrypt in C#. It support version 2 of the AesCrypt file format.</Description>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>TRONSoft.TronAesCrypt.Core</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageVersion>1.0.0.0</PackageVersion>
+    <Title>TronAesCrypt.Core</Title>
+    <PackageProjectUrl>https://github.com/tronsoft/TronAesCrypt</PackageProjectUrl>
+    <PackageLicenseUrl></PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/tronsoft/TronAesCrypt</RepositoryUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Description>An implementation of AesCrypt in C#. It support version 2 of the AesCrypt file format.</Description>
+    <PackageId>TRONSoft.TronAesCrypt.Core</PackageId>
+    <Product>TRONSoft.TronAesCrypt.Core</Product>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <EmbeddedResource Update="Resources.resx">
-        <Generator>ResXFileCodeGenerator</Generator>
-        <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      </EmbeddedResource>
-    </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
 
-    <ItemGroup>
-      <Compile Update="Resources.Designer.cs">
-        <DesignTime>True</DesignTime>
-        <AutoGen>True</AutoGen>
-        <DependentUpon>Resources.resx</DependentUpon>
-      </Compile>
-    </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
 
-    <ItemGroup>
-      <None Include="..\LICENSE">
-        <Pack>True</Pack>
-        <PackagePath></PackagePath>
-      </None>
-    </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
