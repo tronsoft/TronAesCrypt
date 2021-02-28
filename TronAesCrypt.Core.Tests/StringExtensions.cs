@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
-namespace TRONSoft.TronAesCrypt.Main
+namespace TRONSoft.TronAesCrypt.Core.Tests
 {
     internal static class StringExtensions
     {
