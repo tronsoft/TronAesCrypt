@@ -35,7 +35,7 @@ namespace TronAesCrypt.Main.Tests
             }
 
             var cryptMethod = encrypt ? "-e" : "-d";
-            var args = new[] {cryptMethod, "-p", password, "-o", outputFileName, "-f", fileName};
+            var args = new[] { cryptMethod, "-p", password, "-o", outputFileName, "-f", fileName };
             methodInfo.Invoke(null, [args]);
             var exitCode = Convert.ToInt32(0);
             return exitCode == 0;
