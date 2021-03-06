@@ -12,7 +12,8 @@ namespace TRONSoft.TronAesCrypt.Core
         public void WriteHeader(Stream stream)
         {
             // Write header.
-            stream.Write(AesHeader.GetUtf8Bytes());
+            var buffer = AesHeader.GetUtf8Bytes();
+            stream.Write(buffer, 0, buffer.Length);
 
             // write version (AES Crypt version 2 file format -
             // see https://www.aescrypt.com/aes_file_format.html)
@@ -27,7 +28,7 @@ namespace TRONSoft.TronAesCrypt.Core
         public void ReadHeader(Stream inStream)
         {
             var buffer = new byte[3];
-            inStream.Read(buffer);
+            inStream.Read(buffer, 0, buffer.Length);
 
             if (!buffer.GetUtf8String().Equals(AesHeader))
             {
@@ -49,7 +50,7 @@ namespace TRONSoft.TronAesCrypt.Core
             while (true)
             {
                 buffer = new byte[2];
-                var bytesRead = inStream.Read(buffer);
+                var bytesRead = inStream.Read(buffer, 0, buffer.Length);
                 if (bytesRead != 2)
                 {
                     throw new InvalidOperationException(Resources.TheFileIsCorrupt);
@@ -65,9 +66,9 @@ namespace TRONSoft.TronAesCrypt.Core
                     Array.Reverse(buffer);
                 }
 
-                var amountOfBytesToRead = BitConverter.ToInt16(buffer);
+                var amountOfBytesToRead = BitConverter.ToInt16(buffer, 0);
                 buffer = new byte[amountOfBytesToRead];
-                inStream.Read(buffer);
+                inStream.Read(buffer, 0, buffer.Length);
             }
         }
 
@@ -79,18 +80,22 @@ namespace TRONSoft.TronAesCrypt.Core
 
             // Write CREATED_BY extension length
             outStream.WriteByte(0);
-            outStream.WriteByte((byte)((createdBy + appName).Length + 1));
+            outStream.WriteByte((byte) ((createdBy + appName).Length + 1));
 
             // Write the CREATED_BY extension
-            outStream.Write(createdBy.GetUtf8Bytes());
+            var buffer = createdBy.GetUtf8Bytes();
+            outStream.Write(buffer, 0, buffer.Length);
             outStream.WriteByte(0);
-            outStream.Write(appName.GetUtf8Bytes());
+
+            buffer = appName.GetUtf8Bytes();
+            outStream.Write(buffer, 0, buffer.Length);
 
             // Write extensions container
             outStream.WriteByte(0);
             outStream.WriteByte(128);
 
-            outStream.Write(new byte[128]);
+            buffer = new byte[128];
+            outStream.Write(buffer, 0, buffer.Length);
 
             // write end-of-extensions tag
             outStream.WriteByte(0);

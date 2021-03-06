@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>netstandard20</TargetFramework>
     <RootNamespace>TRONSoft.TronAesCrypt.Core</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageVersion>1.0.1.0</PackageVersion>
+    <PackageVersion>1.0.2.0</PackageVersion>
     <Title>TronAesCrypt.Core</Title>
     <PackageProjectUrl>https://github.com/tronsoft/TronAesCrypt</PackageProjectUrl>
     <PackageLicenseUrl></PackageLicenseUrl>
