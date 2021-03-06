@@ -2,6 +2,26 @@
 An implementation of [AesCrypt](https://www.aescrypt.com/) in C#. It support version 2 of the AesCrypt 
 file format. The file format is describe [here](https://www.aescrypt.com/aes_file_format.html).
 
-# Running tests
-**Only on Windows:** The **CheckEncryptionFile** test uses AesCrypt to check the results. To run the test AesCrypt must be in the path environment variable
-for the tests to work. AesCrypt on Windows system is usually installed in *C:\Program Files\AESCrypt*. The test is currently ignored.
+# Run the commandline tool
+Encrypting a file.
+
+On Windows:
+  ```cmd
+  AesCrypt.exe --encrypt --file ToEncrypted.txt --output ToEncrypted.txt.aes --password Password1234
+  ```
+
+On Linux/MacOs
+  ```bash
+  dotnet AesCrypt.dll --encrypt --file ToEncrypted.txt --output ToEncrypted.txt.aes --password Password1234
+  ```
+
+Decrypting a file.
+
+  ```cmd
+  AesCrypt.exe --decrypt --file Encrypted.txt.aes --output Encrypted.txt --password Password1234
+  ```
+
+On Linux/MacOs
+  ```bash
+  dotnet AesCrypt.dll --decrypt --file Encrypted.txt.aes --output Encrypted.txt --password Password1234
+  ```

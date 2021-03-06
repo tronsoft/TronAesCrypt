@@ -4,9 +4,8 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using TRONSoft.TronAesCrypt.Core;
 
-namespace TRONSoft.TronAesCrypt.Main
+namespace TRONSoft.TronAesCrypt.Core.Tests
 {
     [TestClass]
     public class FileFormatTests
@@ -91,28 +90,6 @@ namespace TRONSoft.TronAesCrypt.Main
 
             outStream.ReadByte().Should().Be(0, "This is in the standard");
             outStream.ReadByte().Should().Be(0, "This is in the standard");
-        }
-
-        [TestMethod]
-        [Ignore]
-        public async Task CheckEncryptionFile()
-        {
-            AesCryptProcessRunner.CanAesCryptRun().Should().BeTrue("AesCrypt must be in %PATH%");
-
-            foreach (var info in _fileInfo)
-            {
-                // Arrange
-                var file = await WriteFileToWorkingDirectory(info.Key, info.Value);
-                var encryptedFileName = $"{info.Key}.aes";
-                var encryptedFile = Path.Combine(_workingDir, encryptedFileName);
-
-                // Act
-                new AesCrypt().EncryptFile(file, encryptedFile, Password, 64 * 1024);
-
-                // Assert
-                var canDecrypt = await AesCryptProcessRunner.CanDecrypt(encryptedFile, Path.Combine(_workingDir, $"{info.Key}.aescrypt.aes"), Password);
-                canDecrypt.Should().BeTrue($"the encrypted file {encryptedFileName} is AesCrypt encrypted");
-            }
         }
 
         [TestMethod]

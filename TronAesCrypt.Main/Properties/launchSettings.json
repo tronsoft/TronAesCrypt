@@ -2,7 +2,7 @@
   "profiles": {
     "TronAesCrypt.Main": {
       "commandName": "Project",
-      "commandLineArgs": "-e"
+      "commandLineArgs": "-e -p 1234 -o c:\\temp\\txt.txt -f txt.txt"
     }
   }
 }

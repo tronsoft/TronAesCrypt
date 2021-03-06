@@ -9,13 +9,14 @@ namespace TronAesCrypt.Main
         [Option('e', "encrypt", Default = true, HelpText = "Encrypt a file", SetName = "mode")]
         public bool Encrypt { get; set; }
 
-        [Option('d', "decrypt", HelpText = "Decrypt a file", SetName = "mode", Required = true)]
+        [Option('d', "decrypt", HelpText = "Decrypt a file", SetName = "mode")]
         public bool Decrypt { get; set; }
 
         [Option('o', "output", HelpText = "The encrypted or decrypted file", Required = true)]
         public string OutputFile { get; set; }
 
-        [Value(0, Default = null, Required = true, HelpText = "The name of the file to encrypt or decrypt", MetaName = "File name")]
+       // [Value(0, Default = null, Required = true, HelpText = "The name of the file to encrypt or decrypt", MetaName = "File name")]
+        [Option('f', "file", Required = true, HelpText = "The name of the file to encrypt or decrypt")]
         public string FileName { get; set; }
 
         [Option('p', "password", HelpText = "Password", SetName = "mode", Required = true)]
