@@ -4,7 +4,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>TRONSoft.TronAesCrypt.Core</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageVersion>1.0.0.0</PackageVersion>
+    <PackageVersion>1.0.1.0</PackageVersion>
     <Title>TronAesCrypt.Core</Title>
     <PackageProjectUrl>https://github.com/tronsoft/TronAesCrypt</PackageProjectUrl>
     <PackageLicenseUrl></PackageLicenseUrl>
