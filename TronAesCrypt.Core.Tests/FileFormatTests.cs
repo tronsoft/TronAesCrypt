@@ -60,21 +60,21 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
 
             // Assert
             var buf = new byte[3];
-            outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be("AES", "This is in the standard");
-            outStream.ReadByte().Should().Be(2, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be((CreatedBy + AppName).Length + 1, "This is in the standard");
+            _ = outStream.Read(buf, 0, buf.Length);
+            Assert.Equal("AES", buf.GetUtf8String());
+            Assert.Equal(2, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal((CreatedBy + AppName).Length + 1, outStream.ReadByte());
 
             buf = new byte[CreatedBy.Length];
-            outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be(CreatedBy, "This is in the standard");
+            _ = outStream.Read(buf, 0, buf.Length);
+            Assert.Equal(CreatedBy, buf.GetUtf8String());
 
             Assert.Equal(0, outStream.ReadByte());
 
             buf = new byte[AppName.Length];
-            outStream.Read(buf, 0, buf.Length);
+            _ = outStream.Read(buf, 0, buf.Length);
             Assert.Equal(AppName, buf.GetUtf8String());
 
             Assert.Equal(0, outStream.ReadByte());
