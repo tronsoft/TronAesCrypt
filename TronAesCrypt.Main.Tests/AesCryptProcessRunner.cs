@@ -20,7 +20,7 @@ namespace TronAesCrypt.Main.Tests
 
             if (string.IsNullOrWhiteSpace(outputFileName))
             {
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(outputFileName));
+                throw new ArgumentException(@"Value cannot be null or whitespace.", nameof(outputFileName));
             }
 
             if (string.IsNullOrWhiteSpace(password))
@@ -36,7 +36,7 @@ namespace TronAesCrypt.Main.Tests
 
             var cryptMethod = encrypt ? "-e" : "-d";
             var args = new[] {cryptMethod, "-p", password, "-o", outputFileName, "-f", fileName};
-            methodInfo.Invoke(null, new object[] {args});
+            methodInfo.Invoke(null, [args]);
             var exitCode = Convert.ToInt32(0);
             return exitCode == 0;
         }
