@@ -8,6 +8,11 @@ This is a C# implementation of the [AES Crypt v2 file format](https://www.aescry
 - **TronAesCrypt.Main** - Console application `AesCrypt.exe` (uses CommandLineParser)
 - **TronAesCrypt.Core.Tests** & **TronAesCrypt.Main.Tests** - xUnit test projects
 
+**Target Framework**: .NET 10.0  
+**C# Language Version**: C# 13
+
+> **Note**: For comprehensive C# and .NET coding standards, see [C# Coding Standards](instructions/csharp-coding-standards.instructions.md)
+
 ## Architecture & Key Components
 
 ### Core Encryption Flow (`AesCrypt.cs`)
@@ -51,14 +56,13 @@ dotnet pack -c Release TronAesCrypt.Core/TronAesCrypt.Core.csproj
 
 ## Testing Patterns
 
-### xUnit + AutoFixture + FluentAssertions
+### xUnit + AutoFixture
 
 All test projects use:
 
 - **AutoFixture** for randomized test data
 - **Moq** for mocking (though rarely needed - mostly integration tests)
-- **FluentAssertions** for readable assertions
-- **xUnit** as test framework
+- **xUnit** as test framework with built-in assertions
 
 ### Critical Test Pattern (`FileFormatTests.cs`)
 
