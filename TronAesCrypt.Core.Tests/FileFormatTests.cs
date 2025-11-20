@@ -1,21 +1,20 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using AutoFixture;
-using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace TRONSoft.TronAesCrypt.Core.Tests
 {
-    [TestClass]
-    public class FileFormatTests
+    public class FileFormatTests : IDisposable
     {
         private const string Password = "Password1234";
         private static readonly string CreatedBy = "CREATED_BY";
         private static readonly string AppName = $"{AesCryptHeader.AppName} {AesCryptHeader.Version}";
 
-        private Fixture _fixture;
-        private string _workingDir;
+        private readonly Fixture _fixture;
+        private readonly string _workingDir;
 
         private readonly Dictionary<string, int> _fileInfo = new()
         {
@@ -27,8 +26,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             ["xxl"] = 46851123
         };
 
-        [TestInitialize]
-        public void Setup()
+        public FileFormatTests()
         {
             _fixture = new Fixture();
             _workingDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
@@ -39,8 +37,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             Directory.CreateDirectory(_workingDir);
         }
 
-        [TestCleanup]
-        public void Cleanup()
+        public void Dispose()
         {
             if (Directory.Exists(_workingDir))
             {
@@ -48,7 +45,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void TheHeaderIsCorrectlyWritten()
         {
             // Arrange
@@ -56,43 +53,43 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             using var inStream = new MemoryStream();
             using var outStream = new MemoryStream();
             var password = _fixture.Create<string>();
-            int bufferSize = 16;
+            const int bufferSize = 16;
 
             // Act
             crypter.EncryptStream(inStream, outStream, password, bufferSize);
 
             // Assert
             var buf = new byte[3];
-            outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be("AES", "This is in the standard");
-            outStream.ReadByte().Should().Be(2, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be((CreatedBy + AppName).Length + 1, "This is in the standard");
+            _ = outStream.Read(buf, 0, buf.Length);
+            Assert.Equal("AES", buf.GetUtf8String());
+            Assert.Equal(2, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal((CreatedBy + AppName).Length + 1, outStream.ReadByte());
 
             buf = new byte[CreatedBy.Length];
-            outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be(CreatedBy, "This is in the standard");
+            _ = outStream.Read(buf, 0, buf.Length);
+            Assert.Equal(CreatedBy, buf.GetUtf8String());
 
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
+            Assert.Equal(0, outStream.ReadByte());
 
             buf = new byte[AppName.Length];
             outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be(AppName, "This is in the standard");
+            Assert.Equal(AppName, buf.GetUtf8String());
 
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(128, "This is in the standard");
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal(128, outStream.ReadByte());
 
             for (var i = 0; i < 128; i++)
             {
-                outStream.ReadByte().Should().Be(0, "This is in the standard");
+                Assert.Equal(0, outStream.ReadByte());
             }
 
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
         }
 
-        [TestMethod]
+        [Fact]
         public void TheHeaderShouldBeReadCorrectly()
         {
             using var inStream = new MemoryStream();
@@ -104,7 +101,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             crypter.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task TheStreamShouldBeEncryptedAndDecryptedCorrectly()
         {
             foreach (var info in _fileInfo)
@@ -121,7 +118,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
                 crypter.DecryptFile(encryptedFileName, decryptedFileName, Password, 64 * 1024);
 
                 // Assert
-                fileName.AsSha256OfFile().Should().Be(decryptedFileName.AsSha256OfFile(), "the files are the same");
+                Assert.Equal(fileName.AsSha256OfFile(), decryptedFileName.AsSha256OfFile());
 
             }
         }
