@@ -19,8 +19,7 @@ public static class RandomSaltGenerator
         }
 
         var data = new byte[size];
-        using var rng = new RNGCryptoServiceProvider();
-        rng.GetBytes(data);
+        RandomNumberGenerator.Fill(data);
 
         return data;
     }
