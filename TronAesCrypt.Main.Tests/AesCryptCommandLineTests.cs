@@ -1,7 +1,6 @@
 using System.IO;
 using System.Threading.Tasks;
 using AutoFixture;
-using FluentAssertions;
 using Xunit;
 
 namespace TronAesCrypt.Main.Tests
@@ -19,10 +18,9 @@ namespace TronAesCrypt.Main.Tests
 
             await CreateTextFile(fileToEncrypt, _fixture.Create<string>());
 
-            AesCryptProcessRunner
-                .CanEncrypt(fileToEncrypt, encryptedFile, password)
-                .Should()
-                .BeTrue("the file can be encrypted");
+            Assert.True(
+                AesCryptProcessRunner.CanEncrypt(fileToEncrypt, encryptedFile, password),
+                "the file can be encrypted");
         }
 
         [Fact]
@@ -35,15 +33,13 @@ namespace TronAesCrypt.Main.Tests
 
             await CreateTextFile(fileToEncrypt, _fixture.Create<string>());
 
-            AesCryptProcessRunner
-                .CanEncrypt(fileToEncrypt, encryptedFile, password)
-                .Should()
-                .BeTrue("the file can be encrypted");
+            Assert.True(
+                AesCryptProcessRunner.CanEncrypt(fileToEncrypt, encryptedFile, password),
+                "the file can be encrypted");
 
-            AesCryptProcessRunner
-                .CanDecrypt(encryptedFile, decryptedFile, password)
-                .Should()
-                .BeTrue("the file can be decrypted");
+            Assert.True(
+                AesCryptProcessRunner.CanDecrypt(encryptedFile, decryptedFile, password),
+                "the file can be decrypted");
         }
 
         private static async Task CreateTextFile(string inputFileName, string content)

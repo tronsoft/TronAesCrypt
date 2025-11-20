@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using AutoFixture;
-using FluentAssertions;
 using Xunit;
 
 namespace TRONSoft.TronAesCrypt.Core.Tests
@@ -62,32 +61,32 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             // Assert
             var buf = new byte[3];
             outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be("AES", "This is in the standard");
-            outStream.ReadByte().Should().Be(2, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be((CreatedBy + AppName).Length + 1, "This is in the standard");
+            Assert.Equal("AES", buf.GetUtf8String());
+            Assert.Equal(2, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal((CreatedBy + AppName).Length + 1, outStream.ReadByte());
 
             buf = new byte[CreatedBy.Length];
             outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be(CreatedBy, "This is in the standard");
+            Assert.Equal(CreatedBy, buf.GetUtf8String());
 
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
+            Assert.Equal(0, outStream.ReadByte());
 
             buf = new byte[AppName.Length];
             outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be(AppName, "This is in the standard");
+            Assert.Equal(AppName, buf.GetUtf8String());
 
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(128, "This is in the standard");
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal(128, outStream.ReadByte());
 
             for (var i = 0; i < 128; i++)
             {
-                outStream.ReadByte().Should().Be(0, "This is in the standard");
+                Assert.Equal(0, outStream.ReadByte());
             }
 
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
-            outStream.ReadByte().Should().Be(0, "This is in the standard");
+            Assert.Equal(0, outStream.ReadByte());
+            Assert.Equal(0, outStream.ReadByte());
         }
 
         [Fact]
@@ -119,7 +118,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
                 crypter.DecryptFile(encryptedFileName, decryptedFileName, Password, 64 * 1024);
 
                 // Assert
-                fileName.AsSha256OfFile().Should().Be(decryptedFileName.AsSha256OfFile(), "the files are the same");
+                Assert.Equal(fileName.AsSha256OfFile(), decryptedFileName.AsSha256OfFile());
 
             }
         }
