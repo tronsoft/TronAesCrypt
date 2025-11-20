@@ -17,7 +17,7 @@ public class AesCrypt
     // maximum password length (number of chars)
     private const int MaxPassLen = 1024;
 
-    private readonly AesCryptHeader _aesCryptHeader = new AesCryptHeader();
+    private readonly AesCryptHeader _aesCryptHeader = new();
 
     public void EncryptFile(string inputFileName, string outputFileName, string password, int bufferSize = 16)
     {
@@ -253,15 +253,28 @@ public class AesCrypt
         }
     }
 
-    private static RijndaelManaged CreateAes(byte[] key, byte[] iv) => new RijndaelManaged()
+    private static Aes CreateAes(byte[] key, byte[] iv)
     {
-        KeySize = KeySize * 8,
-        BlockSize = AesBlockSize * 8,
-        Padding = PaddingMode.None,
-        Mode = CipherMode.CBC,
-        Key = key,
-        IV = iv
-    };
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(iv);
+        if (key.Length != KeySize)
+        {
+            throw new ArgumentException($"Key length must be {KeySize} bytes for AES-256.", nameof(key));
+        }
+        if (iv.Length != AesBlockSize)
+        {
+            throw new ArgumentException($"IV length must be {AesBlockSize} bytes.", nameof(iv));
+        }
+
+        var aes = Aes.Create();
+        aes.KeySize = KeySize * 8;
+        aes.BlockSize = AesBlockSize * 8;
+        aes.Padding = PaddingMode.None;
+        aes.Mode = CipherMode.CBC;
+        aes.Key = key;
+        aes.IV = iv;
+        return aes;
+    }
 
     private static byte[] EncryptMainKeyAndIv(byte[] key, byte[] iv, byte[] internalKey, byte[] ivInternal)
     {
