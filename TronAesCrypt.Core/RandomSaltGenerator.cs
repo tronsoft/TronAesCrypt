@@ -1,28 +1,27 @@
 ﻿using System;
 using System.Security.Cryptography;
 
-namespace TRONSoft.TronAesCrypt.Core
+namespace TRONSoft.TronAesCrypt.Core;
+
+public static class RandomSaltGenerator
 {
-    public static class RandomSaltGenerator
+    /// <summary>
+    ///     Creates a random salt that will be used to encrypt your file. This method is required on FileEncrypt.
+    /// </summary>
+    /// <returns>
+    ///     Random bytes.
+    /// </returns>
+    public static byte[] Generate(int size = 16)
     {
-        /// <summary>
-        ///     Creates a random salt that will be used to encrypt your file. This method is required on FileEncrypt.
-        /// </summary>
-        /// <returns>
-        ///     Random bytes.
-        /// </returns>
-        public static byte[] Generate(int size = 16)
+        if (size < 1)
         {
-            if (size < 1)
-            {
-                throw new ArgumentException("Size must be greater or equal to 1");
-            }
-
-            var data = new byte[size];
-            using var rng = new RNGCryptoServiceProvider();
-            rng.GetBytes(data);
-
-            return data;
+            throw new ArgumentException("Size must be greater or equal to 1");
         }
+
+        var data = new byte[size];
+        using var rng = new RNGCryptoServiceProvider();
+        rng.GetBytes(data);
+
+        return data;
     }
 }
