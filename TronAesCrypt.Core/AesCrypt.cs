@@ -189,7 +189,7 @@ public class AesCrypt
             hmac0.TransformBlock(buffer, 0, bytesRead, null, 0);
         }
 
-        hmac0.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+        hmac0.TransformFinalBlock([], 0, 0);
 
         return ((byte) lastDataReadSize, hmac0.Hash);
     }
@@ -231,8 +231,8 @@ public class AesCrypt
             outStream.Write(lastBlock, 0, lastBlock.Length - padding);
         }
 
-        decrypter.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-        hmac0.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+        decrypter.TransformFinalBlock([], 0, 0);
+        hmac0.TransformFinalBlock([], 0, 0);
         if (!hmac0.Hash.SequenceEqual(hmacEncryptedData))
         {
             throw new InvalidOperationException(Resources.TheFileIsCorrupt);
