@@ -13,20 +13,9 @@ public static class AesCryptProcessRunner
 
     private static bool CanCrypt(string fileName, string outputFileName, string password, bool encrypt = true)
     {
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            throw new ArgumentNullException(nameof(fileName));
-        }
-
-        if (string.IsNullOrWhiteSpace(outputFileName))
-        {
-            throw new ArgumentException(@"Value cannot be null or whitespace.", nameof(outputFileName));
-        }
-
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            throw new ArgumentNullException(nameof(password));
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputFileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(password);
 
         var methodInfo = typeof(Program).Assembly.EntryPoint;
         if (methodInfo == null)

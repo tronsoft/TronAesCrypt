@@ -15,7 +15,7 @@ public static class RandomSaltGenerator
     {
         if (size < 1)
         {
-            throw new ArgumentException("Size must be greater or equal to 1");
+            throw new ArgumentOutOfRangeException(nameof(size), "Size must be greater or equal to 1");
         }
 
         var data = new byte[size];
