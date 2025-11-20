@@ -19,10 +19,8 @@ namespace TRONSoft.TronAesCrypt.Core
             }
 
             var data = new byte[size];
-            using (var rng = new RNGCryptoServiceProvider())
-            {
-                rng.GetBytes(data);
-            }
+            using var rng = new RNGCryptoServiceProvider();
+            rng.GetBytes(data);
 
             return data;
         }
