@@ -69,7 +69,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
 
             buf = new byte[CreatedBy.Length];
             _ = outStream.Read(buf, 0, buf.Length);
-            buf.GetUtf8String().Should().Be(CreatedBy, "This is in the standard");
+            Assert.Equal(CreatedBy, buf.GetUtf8String());
 
             Assert.Equal(0, outStream.ReadByte());
 
