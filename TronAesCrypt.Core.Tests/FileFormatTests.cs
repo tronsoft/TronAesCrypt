@@ -1,21 +1,21 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace TRONSoft.TronAesCrypt.Core.Tests
 {
-    [TestClass]
-    public class FileFormatTests
+    public class FileFormatTests : IDisposable
     {
         private const string Password = "Password1234";
         private static readonly string CreatedBy = "CREATED_BY";
         private static readonly string AppName = $"{AesCryptHeader.AppName} {AesCryptHeader.Version}";
 
-        private Fixture _fixture;
-        private string _workingDir;
+        private readonly Fixture _fixture;
+        private readonly string _workingDir;
 
         private readonly Dictionary<string, int> _fileInfo = new()
         {
@@ -27,8 +27,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             ["xxl"] = 46851123
         };
 
-        [TestInitialize]
-        public void Setup()
+        public FileFormatTests()
         {
             _fixture = new Fixture();
             _workingDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
@@ -39,8 +38,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             Directory.CreateDirectory(_workingDir);
         }
 
-        [TestCleanup]
-        public void Cleanup()
+        public void Dispose()
         {
             if (Directory.Exists(_workingDir))
             {
@@ -48,7 +46,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void TheHeaderIsCorrectlyWritten()
         {
             // Arrange
@@ -92,7 +90,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             outStream.ReadByte().Should().Be(0, "This is in the standard");
         }
 
-        [TestMethod]
+        [Fact]
         public void TheHeaderShouldBeReadCorrectly()
         {
             using var inStream = new MemoryStream();
@@ -104,7 +102,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             crypter.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task TheStreamShouldBeEncryptedAndDecryptedCorrectly()
         {
             foreach (var info in _fileInfo)
