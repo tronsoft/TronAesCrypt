@@ -155,7 +155,7 @@ public class AesCrypt
 
     private static (byte, byte[]) EncryptData(Stream inStream, Stream outStream, byte[] internalKey, byte[] iv, int bufferSize)
     {
-        var lastDataReadSize = 0; // File size modulo 16 in least significant byte positions
+        var lastDataReadSize = 0; // File size modulo 16 in the least significant byte positions
         using var cipher = CreateAes(internalKey, iv);
         using var ms = new MemoryStream();
         using var cryptoStream = new CryptoStream(ms, cipher.CreateEncryptor(), CryptoStreamMode.Write);
@@ -259,11 +259,11 @@ public class AesCrypt
         ArgumentNullException.ThrowIfNull(iv);
         if (key.Length != KeySize)
         {
-            throw new ArgumentException($"Key length must be {KeySize} bytes for AES-256.", nameof(key));
+            throw new ArgumentException($@"Key length must be {KeySize} bytes for AES-256.", nameof(key));
         }
         if (iv.Length != AesBlockSize)
         {
-            throw new ArgumentException($"IV length must be {AesBlockSize} bytes.", nameof(iv));
+            throw new ArgumentException($@"IV length must be {AesBlockSize} bytes.", nameof(iv));
         }
 
         var aes = Aes.Create();
@@ -295,10 +295,10 @@ public class AesCrypt
         using var msEncrypt = new MemoryStream(encryptedMainKeyIv);
         using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateDecryptor(), CryptoStreamMode.Read);
         var ivInternal = new byte[16];
-        cryptoStream.Read(ivInternal, 0, ivInternal.Length);
+        cryptoStream.ReadExactly(ivInternal, 0, ivInternal.Length);
 
         var internalKey = new byte[32];
-        cryptoStream.Read(internalKey, 0, internalKey.Length);
+        cryptoStream.ReadExactly(internalKey, 0, internalKey.Length);
         cryptoStream.Close();
 
         return (ivInternal, internalKey);
@@ -310,11 +310,11 @@ public class AesCrypt
         using var hash = SHA256.Create();
         var key = new byte[KeySize];
         Array.Copy(iv, key, iv.Length);
-
+        
         for (var i = 0; i < 8192; i++)
         {
             hash.Initialize();
-            hash.TransformBlock(key, 0, key.Length, key, 0);
+            hash.TransformBlock(key!, 0, key!.Length, key, 0);
             hash.TransformFinalBlock(passwordBytes, 0, passwordBytes.Length);
             key = hash.Hash;
         }
