@@ -53,7 +53,7 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             using var inStream = new MemoryStream();
             using var outStream = new MemoryStream();
             var password = _fixture.Create<string>();
-            int bufferSize = 16;
+            const int bufferSize = 16;
 
             // Act
             crypter.EncryptStream(inStream, outStream, password, bufferSize);
@@ -61,15 +61,15 @@ namespace TRONSoft.TronAesCrypt.Core.Tests
             // Assert
             var buf = new byte[3];
             outStream.Read(buf, 0, buf.Length);
-            Assert.Equal("AES", buf.GetUtf8String());
-            Assert.Equal(2, outStream.ReadByte());
-            Assert.Equal(0, outStream.ReadByte());
-            Assert.Equal(0, outStream.ReadByte());
-            Assert.Equal((CreatedBy + AppName).Length + 1, outStream.ReadByte());
+            buf.GetUtf8String().Should().Be("AES", "This is in the standard");
+            outStream.ReadByte().Should().Be(2, "This is in the standard");
+            outStream.ReadByte().Should().Be(0, "This is in the standard");
+            outStream.ReadByte().Should().Be(0, "This is in the standard");
+            outStream.ReadByte().Should().Be((CreatedBy + AppName).Length + 1, "This is in the standard");
 
             buf = new byte[CreatedBy.Length];
             outStream.Read(buf, 0, buf.Length);
-            Assert.Equal(CreatedBy, buf.GetUtf8String());
+            buf.GetUtf8String().Should().Be(CreatedBy, "This is in the standard");
 
             Assert.Equal(0, outStream.ReadByte());
 
