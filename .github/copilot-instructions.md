@@ -9,7 +9,7 @@ This is a C# implementation of the [AES Crypt v2 file format](https://www.aescry
 - **TronAesCrypt.Core.Tests** & **TronAesCrypt.Main.Tests** - xUnit test projects
 
 **Target Framework**: .NET 10.0  
-**C# Language Version**: C# 13
+**C# Language Version**: C# 14
 
 > **Note**: For comprehensive C# and .NET coding standards, see [C# Coding Standards](instructions/csharp-coding-standards.instructions.md)
 

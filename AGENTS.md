@@ -1,7 +1,7 @@
 # TronAesCrypt - AI Agent Guide
 
 **What:** C# implementation of [AES Crypt Stream Format v2](https://www.aescrypt.com/aes_file_format.html)  
-**Target:** .NET 10.0, C# 13  
+**Target:** .NET 10.0, C# 14  
 **License:** MIT
 
 > **Note**: Implements Stream Format **v2** (not v3). V3 has stronger PBKDF2-HMAC-SHA512 KDF, but this uses v2 for compatibility.
@@ -20,7 +20,7 @@ That file includes:
 - V3 upgrade path (future enhancement)
 
 **→ Coding standards: [.github/instructions/](.github/instructions/)**
-- `csharp-coding-standards.instructions.md` - C# 13 conventions
+- `csharp-coding-standards.instructions.md` - C# 14 conventions
 - `clean-code.instructions.md` - General principles
 
 ## 🏗️ Project Structure

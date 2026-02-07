@@ -6,13 +6,13 @@ applyTo: "**/*.cs"
 # C# & .NET Coding Standards
 
 **Target Framework**: .NET 10.0  
-**C# Language Version**: C# 13 (latest features available)
+**C# Language Version**: C# 14 (latest features available)
 
 ## Core Principles
 
 Follow these fundamental guidelines for all C# development:
 
-- **Modern C#**: Use latest C# 13 features when appropriate (file-scoped namespaces, raw strings, switch expressions, collection expressions)
+- **Modern C#**: Use latest C# 14 features when appropriate (file-scoped namespaces, raw strings, switch expressions, collection expressions, field keyword, null-conditional assignment)
 - **SOLID Principles**: Apply Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion
 - **Production-Ready**: Code should be secure by default, resilient, well-logged, and performant
 - **Maintainability**: Write self-documenting code with clear naming; comment the "WHY", not the "WHAT"
