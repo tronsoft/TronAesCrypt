@@ -1,6 +1,32 @@
 # TronAesCrypt
-An implementation of [AesCrypt](https://www.aescrypt.com/) in C#. It support version 2 of the AesCrypt 
-file format. The file format is describe [here](https://www.aescrypt.com/aes_file_format.html).
+An implementation of [AesCrypt](https://www.aescrypt.com/) in C#. It supports version 2 of the AesCrypt 
+file format. The file format is described [here](https://www.aescrypt.com/aes_file_format.html).
+
+## Protocol & Compatibility
+
+This library implements **AES Crypt Stream Format v2** for encrypting and decrypting `.aes` files.
+
+### Stream Format v2
+- **Encryption**: AES-256 in CBC mode
+- **Key Derivation**: SHA-256 iterated 8,192 times with password and IV
+- **Authentication**: HMAC-SHA256 for both encrypted key and ciphertext
+- **Extensions**: Supports metadata extensions (e.g., `CREATED_BY`)
+- **Minimum footprint**: 136 bytes
+
+### Compatibility
+✅ **Compatible with**: Official AES Crypt tools and other v2 implementations  
+✅ **Can decrypt**: Stream Format v2 files  
+❌ **Cannot decrypt**: Stream Format v3 files (newer format)
+
+### About Stream Format v3
+The official AES Crypt specification now includes **Stream Format v3** with enhanced security:
+- **Stronger KDF**: PBKDF2-HMAC-SHA512 with configurable iteration count (vs v2's fixed 8,192 SHA-256 iterations)
+- **Improved HMAC**: Includes version byte in authentication
+- **Standard padding**: PKCS#7 (vs v2's modulo byte)
+
+**Note**: This implementation uses v2 for broad compatibility. Stream Format v3 provides stronger resistance to brute-force password attacks and may be supported in a future version.
+
+For detailed protocol documentation, see [AES Crypt File Format Specification](https://www.aescrypt.com/aes_file_format.html).
 
 ## Projects
 - `TronAesCrypt.Core` - Library implementing the AesCrypt v2 file format (packaged on build).
