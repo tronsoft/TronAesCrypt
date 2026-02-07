@@ -1,34 +1,22 @@
-﻿using System.Collections.Generic;
-using CommandLine;
-using CommandLine.Text;
+﻿using CommandLine;
 
 namespace TronAesCrypt.Main;
 
-internal sealed class Options
+// Converted to mutable POCO pattern for CommandLineParser
+public class Options
 {
-    [Option('e', "encrypt", Default = true, HelpText = "Encrypt a file", SetName = "mode")]
+    [Option('e', "encrypt", HelpText = "Encrypt input file")]
     public bool Encrypt { get; set; }
 
-    [Option('d', "decrypt", HelpText = "Decrypt a file", SetName = "mode")]
+    [Option('d', "decrypt", HelpText = "Decrypt input file")]
     public bool Decrypt { get; set; }
 
-    [Option('o', "output", HelpText = "The encrypted or decrypted file", Required = true)]
-    public string OutputFile { get; set; }
+    [Option('f', "file", Required = true, HelpText = "Input file path")]
+    public string File { get; set; } = string.Empty;
 
-    // [Value(0, Default = null, Required = true, HelpText = "The name of the file to encrypt or decrypt", MetaName = "File name")]
-    [Option('f', "file", Required = true, HelpText = "The name of the file to encrypt or decrypt")]
-    public string FileName { get; set; }
+    [Option('o', "output", Required = true, HelpText = "Output file path")]
+    public string Output { get; set; } = string.Empty;
 
-    [Option('p', "password", HelpText = "Password", SetName = "mode", Required = true)]
-    public string Password { get; set; }
-
-    [Usage(ApplicationAlias = "AesCrypt.exe")]
-    public static IEnumerable<Example> Examples
-    {
-        get
-        {
-            yield return new Example("Encrypting a file", new Options { Encrypt = true, OutputFile = "ToEncrypted.txt.aes", FileName = "ToEncrypted.txt", Password = "Password1234" });
-            yield return new Example("Decrypting a file", new Options { Decrypt = true, OutputFile = "Encrypted.txt", FileName = "Encrypted.txt.aes", Password = "Password1234" });
-        }
-    }
+    [Option('p', "password", Required = true, HelpText = "Password for encryption/decryption")]
+    public string Password { get; set; } = string.Empty;
 }

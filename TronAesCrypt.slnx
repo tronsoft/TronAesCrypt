@@ -1,0 +1,26 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Docs/">
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="TronAesCrypt.Core.Tests/TronAesCrypt.Core.Tests.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="TronAesCrypt.Core/TronAesCrypt.Core.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="TronAesCrypt.Main.Tests/TronAesCrypt.Main.Tests.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="TronAesCrypt.Main/TronAesCrypt.Main.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>
