@@ -68,5 +68,14 @@ namespace TronAesCrypt.Main {
                 return ResourceManager.GetString("The_input_file_does_not_exist", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You must specify either -e (encrypt) or -d (decrypt)..
+        /// </summary>
+        internal static string You_must_specify_either_encrypt_or_decrypt_option {
+            get {
+                return ResourceManager.GetString("You_must_specify_either_encrypt_or_decrypt_option", resourceCulture);
+            }
+        }
     }
 }
