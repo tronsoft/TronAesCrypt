@@ -297,11 +297,15 @@ When adding features, maintain AES Crypt v2 compatibility:
 
 ## CI/CD Pipeline
 
-GitHub Actions workflow (`.github/workflows/ci.yml`):
-- Runs on: `ubuntu-latest` with .NET 10 SDK
-- Triggers: Push/PR to `main`, `master`, `upgrade-to-NET10` branches
-- Steps: Restore → Build (Release) → Test with code coverage
-- Note: Legacy `dotnet.yml` workflow exists for .NET 6 (may be outdated)
+GitHub Actions workflows:
+- **`ci.yml`**: Primary workflow for modern branches with .NET 10 SDK
+  - Runs on: `ubuntu-latest`
+  - Triggers: Push/PR to `main`, `master`, `upgrade-to-NET10` branches
+  - Steps: Restore → Build (Release) → Test with code coverage
+- **`dotnet.yml`**: Legacy workflow for `master` branch with .NET 10 SDK
+  - Runs on: `ubuntu-latest`
+  - Triggers: Push/PR to `master` branch
+  - Steps: Restore → Build (Release) → Test
 
 ## Debugging & Troubleshooting
 
