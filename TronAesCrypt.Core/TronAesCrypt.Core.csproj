@@ -5,12 +5,12 @@
     <LangVersion>14</LangVersion>
     <RootNamespace>TRONSoft.TronAesCrypt.Core</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageVersion>1.0.3.0</PackageVersion>
+    <PackageVersion>2.0.0.0</PackageVersion>
     <Title>TronAesCrypt.Core</Title>
     <PackageProjectUrl>https://github.com/tronsoft/TronAesCrypt</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tronsoft/TronAesCrypt</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Description>An implementation of AesCrypt in C#. It support version 2 of the AesCrypt file format.</Description>
+    <Description>An implementation of AesCrypt in C#. Supports version 2 (read) and version 3 (read/write) of the AesCrypt file format.</Description>
     <PackageId>TRONSoft.TronAesCrypt.Core</PackageId>
     <Product>TRONSoft.TronAesCrypt.Core</Product>
     <PackageReadmeFile>README.md</PackageReadmeFile>

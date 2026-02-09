@@ -6,18 +6,22 @@ namespace TRONSoft.TronAesCrypt.Core;
 public class AesCryptHeader
 {
     private const string AesHeader = "AES";
-    public const string Version = "0.1.0";
+    public const string Version = "2.0.0";
     public const string AppName = "TronAesCrypt";
 
     public void WriteHeader(Stream stream)
+    {
+        WriteHeader(stream, AesCryptVersion.V3);
+    }
+
+    public void WriteHeader(Stream stream, AesCryptVersion version)
     {
         // Write header.
         var buffer = AesHeader.GetUtf8Bytes();
         stream.Write(buffer, 0, buffer.Length);
 
-        // write version (AES Crypt version 2 file format -
-        // see https://www.aescrypt.com/aes_file_format.html)
-        stream.WriteByte(2);
+        // Write version byte
+        stream.WriteByte((byte)version);
 
         // reserved byte (set to zero)
         stream.WriteByte(0);
@@ -25,7 +29,20 @@ public class AesCryptHeader
         WriteExtensions(stream);
     }
 
-    public void ReadHeader(Stream inStream)
+    public void WriteHeaderV3(Stream stream, int kdfIterations)
+    {
+        WriteHeader(stream, AesCryptVersion.V3);
+
+        // Write KDF iteration count (4 bytes, network byte order / big-endian)
+        var iterationBytes = BitConverter.GetBytes(kdfIterations);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(iterationBytes);
+        }
+        stream.Write(iterationBytes, 0, iterationBytes.Length);
+    }
+
+    public AesCryptVersion ReadHeader(Stream inStream)
     {
         var buffer = new byte[3];
         _ = inStream.Read(buffer, 0, buffer.Length);
@@ -35,13 +52,14 @@ public class AesCryptHeader
             throw new InvalidOperationException(Resources.NotAnAescryptFile);
         }
 
-        // write version (AES Crypt version 2 file format -
-        // see https://www.aescrypt.com/aes_file_format.html)
-        var version = inStream.ReadByte();
-        if (version != 2)
+        // Read version (AES Crypt file format)
+        var versionByte = inStream.ReadByte();
+        if (versionByte != 2 && versionByte != 3)
         {
-            throw new InvalidOperationException(Resources.OnlyAesCryptVersion2IsSupported);
+            throw new InvalidOperationException($"Unsupported AES Crypt version: {versionByte}. Only versions 2 and 3 are supported.");
         }
+
+        var version = (AesCryptVersion)versionByte;
 
         // Read reserved byte.
         inStream.ReadByte();
@@ -70,6 +88,8 @@ public class AesCryptHeader
             buffer = new byte[amountOfBytesToRead];
             inStream.Read(buffer, 0, buffer.Length);
         }
+
+        return version;
     }
 
     private void WriteExtensions(Stream outStream)

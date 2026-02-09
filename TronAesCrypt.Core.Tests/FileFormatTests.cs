@@ -62,7 +62,7 @@ public class FileFormatTests : IDisposable
         var buf = new byte[3];
         _ = outStream.Read(buf, 0, buf.Length);
         Assert.Equal("AES", buf.GetUtf8String());
-        Assert.Equal(2, outStream.ReadByte());
+        Assert.Equal(3, outStream.ReadByte()); // Now v3
         Assert.Equal(0, outStream.ReadByte());
         Assert.Equal(0, outStream.ReadByte());
         Assert.Equal((CreatedBy + AppName).Length + 1, outStream.ReadByte());
