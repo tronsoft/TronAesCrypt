@@ -57,4 +57,5 @@ dotnet pack -c Release TronAesCrypt.Core/TronAesCrypt.Core.csproj
 - **Custom padding with modulo byte** (not PKCS#7 - that's v3)
 - **Stream-first API** - file methods are convenience wrappers
 - **Control-flow braces are mandatory** - always use braces for `if`, `else`, `for`, `foreach`, `while`, and `using` blocks, even for a single statement
+- **Comments explain WHY only** — never add section-header, closing-brace, journal, mandated, or banner comments; remove them on sight. See `clean-code.instructions.md`.
 - **Namespace**: `TRONSoft.TronAesCrypt.Core` (note: TRONSoft, not TronSoft)

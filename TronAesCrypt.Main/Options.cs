@@ -2,7 +2,6 @@
 
 namespace TronAesCrypt.Main;
 
-// Converted to mutable POCO pattern for CommandLineParser
 public class Options
 {
     [Option('e', "encrypt", HelpText = "Encrypt input file")]

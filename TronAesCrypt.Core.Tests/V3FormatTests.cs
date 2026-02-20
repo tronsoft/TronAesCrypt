@@ -45,29 +45,23 @@ public class V3FormatTests : IDisposable
         // Act
         crypter.EncryptStream(inStream, outStream, Password, 16, kdfIterations);
 
-        // Assert - Verify header structure
+        // Assert
         outStream.Position = 0;
-        
-        // Read magic bytes "AES"
+
         var magicBuf = new byte[3];
         outStream.Read(magicBuf, 0, magicBuf.Length);
         Assert.Equal("AES", magicBuf.GetUtf8String());
-        
-        // Read version byte (should be 3 for v3)
+
         Assert.Equal(3, outStream.ReadByte());
-        
-        // Read reserved byte
+
         Assert.Equal(0, outStream.ReadByte());
-        
-        // Skip extensions - read until we find end-of-extensions marker (0x00 0x00)
+
         SkipExtensions(outStream);
-        
-        // Now we should be at the 4-byte KDF iteration count
+
         var iterationBytes = new byte[4];
         var bytesRead = outStream.Read(iterationBytes, 0, iterationBytes.Length);
         Assert.Equal(4, bytesRead);
-        
-        // Convert from big-endian to int
+
         if (BitConverter.IsLittleEndian)
         {
             Array.Reverse(iterationBytes);
@@ -146,14 +140,12 @@ public class V3FormatTests : IDisposable
                 break;
             }
 
-            // Read the length as big-endian
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(lengthBuf);
             }
             var extensionLength = BitConverter.ToInt16(lengthBuf, 0);
-            
-            // Skip the extension data
+
             var extensionData = new byte[extensionLength];
             bytesRead = stream.Read(extensionData, 0, extensionData.Length);
             
