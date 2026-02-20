@@ -59,6 +59,7 @@ public class FileFormatTests : IDisposable
         crypter.EncryptStream(inStream, outStream, password, bufferSize);
 
         // Assert
+        outStream.Position = 0;
         var buf = new byte[3];
         _ = outStream.Read(buf, 0, buf.Length);
         Assert.Equal("AES", buf.GetUtf8String());
@@ -98,6 +99,7 @@ public class FileFormatTests : IDisposable
         crypter.EncryptStream(inStream, outStream, Password, 64 * 1024);
 
         // Act & Assert
+        outStream.Position = 0;
         crypter.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
     }
 

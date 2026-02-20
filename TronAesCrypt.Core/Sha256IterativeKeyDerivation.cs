@@ -22,6 +22,9 @@ internal class Sha256IterativeKeyDerivation : IKeyDerivationFunction
         ArgumentNullException.ThrowIfNull(password);
         ArgumentNullException.ThrowIfNull(salt);
 
+        // UTF-16 LE encoding is REQUIRED by the AES Crypt specification for cross-platform compatibility.
+        // Rfc2898DeriveBytes.GetBytes() with string parameter uses UTF-8, which is incompatible.
+        // The GetUtf16Bytes() extension provides UTF-16 LE encoding as specified.
         var passwordBytes = password.GetUtf16Bytes();
         using var hash = SHA256.Create();
         var key = new byte[KeySize];

@@ -158,8 +158,8 @@ public class V2BackwardCompatibilityTests : IDisposable
         }
         
         // Encrypt the data with custom v2 padding
-        var (moduloByte, hmacData) = EncryptDataV2(plaintext, internalKey, ivData);
-        outStream.Write(moduloByte, 0, moduloByte.Length);
+        var (encryptedData, hmacData) = EncryptDataV2(plaintext, internalKey, ivData);
+        outStream.Write(encryptedData, 0, encryptedData.Length);
         
         // Write modulo byte
         outStream.WriteByte((byte)(plaintext.Length % 16));

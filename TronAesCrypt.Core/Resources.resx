@@ -21,9 +21,7 @@
     <data name="NotAnAescryptFile" xml:space="preserve">
         <value>Not an AesCrypt file.</value>
     </data>
-    <data name="OnlyAesCryptVersion2IsSupported" xml:space="preserve">
-        <value>Only AesCrypt version 2 is supported.</value>
-    </data>
+
     <data name="TheFileIsCorrupt" xml:space="preserve">
         <value>The file is corrupt.</value>
     </data>

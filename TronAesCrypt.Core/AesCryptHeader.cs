@@ -9,11 +9,6 @@ public class AesCryptHeader
     public const string Version = "2.0.0";
     public const string AppName = "TronAesCrypt";
 
-    public void WriteHeader(Stream stream)
-    {
-        WriteHeader(stream, AesCryptVersion.V2);
-    }
-
     public void WriteHeader(Stream stream, AesCryptVersion version)
     {
         // Write header.
@@ -45,11 +40,13 @@ public class AesCryptHeader
     public AesCryptVersion ReadHeader(Stream inStream)
     {
         var buffer = new byte[3];
-        var bytesRead = inStream.Read(buffer, 0, buffer.Length);
-        
-        if (bytesRead != 3)
+        try
         {
-            throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            inStream.ReadExactly(buffer, 0, 3);
+        }
+        catch (EndOfStreamException ex)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt, ex);
         }
 
         if (!buffer.GetUtf8String().Equals(AesHeader))
