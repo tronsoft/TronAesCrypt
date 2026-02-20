@@ -86,5 +86,14 @@ namespace TRONSoft.TronAesCrypt.Core {
                 return ResourceManager.GetString("TheFileIsCorrupt", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unsupported AES Crypt version: {0}. Only versions 2 and 3 are supported..
+        /// </summary>
+        internal static string UnsupportedAesCryptVersion {
+            get {
+                return ResourceManager.GetString("UnsupportedAesCryptVersion", resourceCulture);
+            }
+        }
     }
 }

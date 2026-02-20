@@ -27,4 +27,7 @@
     <data name="TheFileIsCorrupt" xml:space="preserve">
         <value>The file is corrupt.</value>
     </data>
+    <data name="UnsupportedAesCryptVersion" xml:space="preserve">
+        <value>Unsupported AES Crypt version: {0}. Only versions 2 and 3 are supported.</value>
+    </data>
 </root>

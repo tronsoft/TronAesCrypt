@@ -3,7 +3,7 @@ namespace TRONSoft.TronAesCrypt.Core;
 /// <summary>
 /// Interface for key derivation functions used to stretch passwords.
 /// </summary>
-public interface IKeyDerivationFunction
+internal interface IKeyDerivationFunction
 {
     /// <summary>
     /// Derives a cryptographic key from a password and salt.

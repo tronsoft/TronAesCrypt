@@ -11,7 +11,7 @@ public class AesCryptHeader
 
     public void WriteHeader(Stream stream)
     {
-        WriteHeader(stream, AesCryptVersion.V3);
+        WriteHeader(stream, AesCryptVersion.V2);
     }
 
     public void WriteHeader(Stream stream, AesCryptVersion version)
@@ -45,7 +45,12 @@ public class AesCryptHeader
     public AesCryptVersion ReadHeader(Stream inStream)
     {
         var buffer = new byte[3];
-        _ = inStream.Read(buffer, 0, buffer.Length);
+        var bytesRead = inStream.Read(buffer, 0, buffer.Length);
+        
+        if (bytesRead != 3)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+        }
 
         if (!buffer.GetUtf8String().Equals(AesHeader))
         {
@@ -56,7 +61,7 @@ public class AesCryptHeader
         var versionByte = inStream.ReadByte();
         if (versionByte != 2 && versionByte != 3)
         {
-            throw new InvalidOperationException($"Unsupported AES Crypt version: {versionByte}. Only versions 2 and 3 are supported.");
+            throw new InvalidOperationException(string.Format(Resources.UnsupportedAesCryptVersion, versionByte));
         }
 
         var version = (AesCryptVersion)versionByte;
@@ -68,8 +73,8 @@ public class AesCryptHeader
         while (true)
         {
             buffer = new byte[2];
-            var bytesRead = inStream.Read(buffer, 0, buffer.Length);
-            if (bytesRead != 2)
+            var extensionLengthBytesRead = inStream.Read(buffer, 0, buffer.Length);
+            if (extensionLengthBytesRead != 2)
             {
                 throw new InvalidOperationException(Resources.TheFileIsCorrupt);
             }
@@ -85,8 +90,26 @@ public class AesCryptHeader
             }
 
             var amountOfBytesToRead = BitConverter.ToInt16(buffer, 0);
+            
+            // Add validation for extension length
+            if (amountOfBytesToRead <= 0)
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+            
             buffer = new byte[amountOfBytesToRead];
-            inStream.Read(buffer, 0, buffer.Length);
+            
+            // Replace single Read with loop to handle short reads
+            var totalBytesRead = 0;
+            while (totalBytesRead < buffer.Length)
+            {
+                var bytesReadThisIteration = inStream.Read(buffer, totalBytesRead, buffer.Length - totalBytesRead);
+                if (bytesReadThisIteration <= 0)
+                {
+                    throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+                }
+                totalBytesRead += bytesReadThisIteration;
+            }
         }
 
         return version;

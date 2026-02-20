@@ -70,7 +70,7 @@ public class AesCryptGuardTests
 
         // Write correct magic, wrong version, reserved, and end-of-extensions
         inStream.Write(Encoding.ASCII.GetBytes("AES"));
-        inStream.WriteByte(3); // invalid version (valid is 2)
+        inStream.WriteByte(4); // invalid version (valid are 2 and 3)
         inStream.WriteByte(0); // reserved
         inStream.WriteByte(0); // end of extensions tag hi
         inStream.WriteByte(0); // end of extensions tag lo

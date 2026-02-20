@@ -6,7 +6,7 @@ namespace TRONSoft.TronAesCrypt.Core;
 /// <summary>
 /// Implements SHA-256 iterative key derivation for AES Crypt v2 backward compatibility.
 /// </summary>
-public class Sha256IterativeKeyDerivation : IKeyDerivationFunction
+internal class Sha256IterativeKeyDerivation : IKeyDerivationFunction
 {
     private const int KeySize = 32;
     private const int Iterations = 8192;

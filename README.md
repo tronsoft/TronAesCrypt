@@ -71,12 +71,27 @@ crypter.EncryptFile("plain.txt", "plain.txt.aes", "Password1234", 64 * 1024, kdf
 crypter.DecryptFile("plain.txt.aes", "plain-decrypted.txt", "Password1234", 64 * 1024);
 ```
 
-## Migration from v2
+## Breaking Changes in Version 2.0
 
-If you have files encrypted with the previous version (1.x) using stream format v2:
-- **Decryption**: Works seamlessly - the library automatically detects and decrypts v2 files
-- **Re-encryption**: To upgrade to v3 format, simply decrypt and re-encrypt files with version 2.0+
-- **No Breaking Changes**: The API remains compatible; `kdfIterations` is an optional parameter
+### Stream Format v3 Encryption (Breaking Change)
+
+Starting with version 2.0, **all new encryptions are written in Stream Format v3 format only**. This is a breaking change for workflows that depend on v2-format `.aes` output.
+
+**Impact:**
+- ✅ **Decryption**: TronAesCrypt 2.0 can decrypt BOTH v2 and v3 files (full backward compatibility)
+- ❌ **Encryption**: TronAesCrypt 2.0 writes ONLY v3 format (not readable by v2-only tools)
+- ✅ **API**: Public API remains compatible with 1.x; `kdfIterations` is an optional parameter
+
+**Migration Options:**
+1. **Upgrade downstream tools** to support Stream Format v3 (recommended for security)
+2. **Stay on TronAesCrypt 1.x** for encryption if you must produce v2-format output
+3. **Use official AES Crypt tools** (https://www.aescrypt.com/) which support both v2 and v3
+
+**Why v3?**
+- 37x stronger key derivation (300,000 PBKDF2-HMAC-SHA512 iterations vs 8,192 SHA-256)
+- Configurable iteration counts for custom security levels
+- HMAC includes version byte to prevent downgrade attacks
+- Standard PKCS#7 padding
 
 ## Performance Note
 
