@@ -6,7 +6,6 @@ namespace TRONSoft.TronAesCrypt.Core;
 
 public class AesCrypt
 {
-    // AES block size in bytes
     private const int AesBlockSize = 16;
 
     /// <summary>
@@ -14,7 +13,6 @@ public class AesCrypt
     /// </summary>
     private const int KeySize = 32;
 
-    // maximum password length (number of chars)
     private const int MaxPassLen = 1024;
 
     // KDF iteration count limits to prevent CPU DoS attacks
@@ -69,48 +67,6 @@ public class AesCrypt
         public override void SetLength(long value) => throw new NotSupportedException();
     }
 
-    /// <summary>
-    /// A read-only stream that limits the number of bytes that can be read from the inner stream.
-    /// </summary>
-    private sealed class LimitedReadStream : Stream
-    {
-        private readonly Stream _innerStream;
-        private long _remaining;
-
-        public LimitedReadStream(Stream innerStream, long maxBytes)
-        {
-            _innerStream = innerStream;
-            _remaining = maxBytes;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            if (_remaining <= 0)
-            {
-                return 0;
-            }
-
-            var bytesToRead = (int)Math.Min(count, _remaining);
-            var bytesRead = _innerStream.Read(buffer, offset, bytesToRead);
-            _remaining -= bytesRead;
-            return bytesRead;
-        }
-
-        public override bool CanRead => true;
-        public override bool CanSeek => false;
-        public override bool CanWrite => false;
-        public override long Length => throw new NotSupportedException();
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-        public override void Flush() => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        public override void SetLength(long value) => throw new NotSupportedException();
-    }
-
     public void EncryptFile(string inputFileName, string outputFileName, string password, int bufferSize = 64 * 1024, int kdfIterations = 300_000)
     {
         using var inputStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read);
@@ -155,32 +111,27 @@ public class AesCrypt
         ArgumentNullException.ThrowIfNull(outStream);
         ArgumentNullException.ThrowIfNull(password);
 
-        // Validate the buffer size
         if (bufferSize % AesBlockSize != 0)
         {
             throw new ArgumentException("Buffer size must be a multiple of AES block size.");
         }
 
-        // Validate password  length
         if (password.Length > MaxPassLen)
         {
             throw new ArgumentException("The password is too long.");
         }
 
-        // Validate stream seekability
         if (!inStream.CanSeek)
         {
             throw new ArgumentException("Input stream must be seekable for decryption (v2/v3 format requires reading file header and trailer).", nameof(inStream));
         }
 
-        // Read header and detect version
         var version = _aesCryptHeader.ReadHeader(inStream);
 
-        // Read KDF iteration count for v3
         int kdfIterations = 0;
         if (version == AesCryptVersion.V3)
         {
-            var iterationBytes = ReadBytes(inStream, 4);
+            var iterationBytes = inStream.ReadBytes(4);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(iterationBytes);
@@ -194,10 +145,8 @@ public class AesCrypt
             }
         }
 
-        // read the iv used to encrypt the main iv and the encryption key
-        var ivMain = ReadBytes(inStream, 16);
+        var ivMain = inStream.ReadBytes(16);
 
-        // Derive key based on version
         byte[] key = null;
         try
         {
@@ -212,8 +161,7 @@ public class AesCrypt
                 key = kdf.DeriveKey(password, ivMain);
             }
 
-            // read encrypted main iv and key
-            var mainKeyAndIvRead = ReadBytes(inStream, 48);
+            var mainKeyAndIvRead = inStream.ReadBytes(48);
 
             using var hmac1 = new HMACSHA256(key);
             byte[] hmacMainIvAndKeyActual;
@@ -232,8 +180,7 @@ public class AesCrypt
                 hmacMainIvAndKeyActual = hmac1.ComputeHash(dataToHash);
             }
 
-            // read HMAC-SHA256 of the encrypted iv and key
-            var hmacMainKeyAndIvRead = ReadBytes(inStream, 32);
+            var hmacMainKeyAndIvRead = inStream.ReadBytes(32);
             if (!CryptographicOperations.FixedTimeEquals(hmacMainKeyAndIvRead, hmacMainIvAndKeyActual))
             {
                 throw new InvalidOperationException(Resources.TheFileIsCorrupt);
@@ -273,19 +220,16 @@ public class AesCrypt
         ArgumentNullException.ThrowIfNull(outStream);
         ArgumentNullException.ThrowIfNull(password);
 
-        // Validate the buffer size
         if (bufferSize % AesBlockSize != 0)
         {
             throw new ArgumentException("Buffer size must be a multiple of AES block size.");
         }
 
-        // Validate password  length
         if (password.Length > MaxPassLen)
         {
             throw new ArgumentException("The password is too long.");
         }
 
-        // Validate KDF iterations bounds
         if (kdfIterations < MinKdfIterations || kdfIterations > MaxKdfIterations)
         {
             throw new ArgumentOutOfRangeException(nameof(kdfIterations), $"KDF iterations must be between {MinKdfIterations} and {MaxKdfIterations}");
@@ -294,36 +238,25 @@ public class AesCrypt
         var ivData = RandomSaltGenerator.Generate();
         var ivMainKey = RandomSaltGenerator.Generate();
 
-        // Use PBKDF2-HMAC-SHA512 for v3
         var kdf = new Pbkdf2HmacSha512KeyDerivation(kdfIterations);
         var key = kdf.DeriveKey(password, ivMainKey);
 
-        // create hmac for cipher text
         var internalKey = RandomSaltGenerator.Generate(32);
-
-        // encrypt the main key and iv
         var encryptedMainKeyIv = EncryptMainKeyAndIv(key, ivMainKey, internalKey, ivData);
 
-        // Write v3 header with KDF iteration count
         _aesCryptHeader.WriteHeaderV3(outStream, kdfIterations);
-
-        // write the iv used to encrypt the main iv and the encryption key
         outStream.Write(ivMainKey, 0, ivMainKey.Length);
-
-        // write encrypted main iv and key
         outStream.Write(encryptedMainKeyIv, 0, encryptedMainKeyIv.Length);
 
-        // write HMAC-SHA256 of the encrypted iv and key (with version byte 0x03 appended)
         using (var hmacMainKeyIv = new HMACSHA256(key))
         {
             var dataToHash = new byte[encryptedMainKeyIv.Length + 1];
             Array.Copy(encryptedMainKeyIv, dataToHash, encryptedMainKeyIv.Length);
-            dataToHash[encryptedMainKeyIv.Length] = 0x03; // Append version byte
+            dataToHash[encryptedMainKeyIv.Length] = 0x03;
             var hash = hmacMainKeyIv.ComputeHash(dataToHash);
             outStream.Write(hash, 0, hash.Length);
         }
 
-        // Encrypt the 'real' data using PKCS#7 padding
         var hmac0Value = EncryptDataV3(inStream, outStream, internalKey, ivData, bufferSize);
 
         // V3: No modulo byte, just the HMAC
@@ -334,7 +267,7 @@ public class AesCrypt
 
     private static byte[] EncryptDataV3(Stream inStream, Stream outStream, byte[] internalKey, byte[] iv, int bufferSize)
     {
-        using var cipher = CreateAes(internalKey, iv, usePkcs7Padding: true);
+        using var cipher = AesFactory.Create(internalKey, iv, usePkcs7Padding: true);
         using var hmac0 = new HMACSHA256(internalKey);
         hmac0.Initialize();
         
@@ -357,176 +290,18 @@ public class AesCrypt
         var (dataIv, internalKey) = DecryptMainKeyAndIv(key, ivMain, mainKeyAndIv);
         try
         {
-            var currentPosition = inStream.Position;
-
-            if (version == AesCryptVersion.V2)
-            {
-                // V2: Has modulo byte before final HMAC
-                var endPositionEncryptedData = inStream.Length - 32 - 1;
-
-                // Get padding and hmac
-                inStream.Position = endPositionEncryptedData;
-                var padding = (16 - ReadBytes(inStream, 1)[0]) % 16;
-                var hmacEncryptedData = ReadBytes(inStream, 32);
-
-                // Reset the position to the beginning of the encrypted data
-                inStream.Position = currentPosition;
-
-                // Get hmac
-                using var hmac0 = new HMACSHA256(internalKey);
-                hmac0.Initialize();
-
-                // Get the cipher
-                using var cipher = CreateAes(internalKey, dataIv, usePkcs7Padding: false);
-                using var decrypter = cipher.CreateDecryptor();
-                
-                // First read as much data as possible.
-                ReadEncryptedBytes(bufferSize);
-
-                // read the remaining
-                ReadEncryptedBytes();
-
-                // Everything read but the last block need to remove padding
-                if (inStream.Position != endPositionEncryptedData)
-                {
-                    var lastBlock = ReadBytes(inStream, AesBlockSize);
-                    hmac0.TransformBlock(lastBlock, 0, lastBlock.Length, null, 0);
-
-                    decrypter.TransformBlock(lastBlock, 0, lastBlock.Length, lastBlock, 0);
-                    outStream.Write(lastBlock, 0, lastBlock.Length - padding);
-                }
-
-                decrypter.TransformFinalBlock([], 0, 0);
-                hmac0.TransformFinalBlock([], 0, 0);
-                if (!CryptographicOperations.FixedTimeEquals(hmac0.Hash!, hmacEncryptedData))
-                {
-                    throw new InvalidOperationException(Resources.TheFileIsCorrupt);
-                }
-                
-                
-                void ReadEncryptedBytes(int bytesToRead = AesBlockSize)
-                {
-                    var buffer = new byte[bytesToRead];
-                    while (inStream.Position < endPositionEncryptedData - bytesToRead)
-                    {
-                        // Loop to ensure we read the full amount requested
-                        var totalBytesRead = 0;
-                        while (totalBytesRead < bytesToRead)
-                        {
-                            var bytesReadInIteration = inStream.Read(buffer, totalBytesRead, bytesToRead - totalBytesRead);
-                            if (bytesReadInIteration == 0)
-                            {
-                                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
-                            }
-                            totalBytesRead += bytesReadInIteration;
-                        }
-                        
-                        // Use totalBytesRead for all operations
-                        hmac0.TransformBlock(buffer, 0, totalBytesRead, null, 0);
-                        decrypter.TransformBlock(buffer, 0, totalBytesRead, buffer, 0);
-                        outStream.Write(buffer, 0, totalBytesRead);
-                    }
-                }
-            }
-            else // V3
-            {
-                // V3: No modulo byte, just HMAC at the end, and uses PKCS#7 padding
-                var endPositionEncryptedData = inStream.Length - 32;
-                var encryptedLength = endPositionEncryptedData - currentPosition;
-
-                // Get hmac
-                inStream.Position = endPositionEncryptedData;
-                var hmacEncryptedData = ReadBytes(inStream, 32);
-
-                // Pass 1: Verify HMAC by reading through ciphertext incrementally
-                inStream.Position = currentPosition;
-                using (var hmac0 = new HMACSHA256(internalKey))
-                {
-                    hmac0.Initialize();
-                    var buffer = new byte[bufferSize];
-                    var remaining = encryptedLength;
-                    
-                    while (remaining > 0)
-                    {
-                        var bytesToRead = (int)Math.Min(remaining, buffer.Length);
-                        var totalBytesRead = 0;
-                        
-                        // Ensure we read the full amount requested
-                        while (totalBytesRead < bytesToRead)
-                        {
-                            var bytesRead = inStream.Read(buffer, totalBytesRead, bytesToRead - totalBytesRead);
-                            if (bytesRead == 0)
-                            {
-                                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
-                            }
-                            totalBytesRead += bytesRead;
-                        }
-                        
-                        hmac0.TransformBlock(buffer, 0, totalBytesRead, null, 0);
-                        remaining -= totalBytesRead;
-                    }
-                    
-                    hmac0.TransformFinalBlock([], 0, 0);
-                    if (!CryptographicOperations.FixedTimeEquals(hmac0.Hash!, hmacEncryptedData))
-                    {
-                        throw new InvalidOperationException(Resources.TheFileIsCorrupt);
-                    }
-                }
-
-                // Pass 2: Seek back and decrypt with PKCS#7 padding handling
-                inStream.Position = currentPosition;
-                using var limitedStream = new LimitedReadStream(inStream, encryptedLength);
-                using var cipher = CreateAes(internalKey, dataIv, usePkcs7Padding: true);
-                using var cryptoStream = new CryptoStream(limitedStream, cipher.CreateDecryptor(), CryptoStreamMode.Read);
-                
-                var decryptBuffer = new byte[bufferSize];
-                int bytesReadFromDecrypt;
-
-                while ((bytesReadFromDecrypt = cryptoStream.Read(decryptBuffer, 0, decryptBuffer.Length)) > 0)
-                {
-                    outStream.Write(decryptBuffer, 0, bytesReadFromDecrypt);
-                }
-            }
+            AesDecryptorFactory.Create(version).Decrypt(inStream, outStream, internalKey, dataIv, bufferSize);
         }
         finally
         {
-            if (internalKey != null)
-            {
-                CryptographicOperations.ZeroMemory(internalKey);
-            }
-            if (dataIv != null)
-            {
-                CryptographicOperations.ZeroMemory(dataIv);
-            }
+            if (internalKey != null) CryptographicOperations.ZeroMemory(internalKey);
+            if (dataIv != null) CryptographicOperations.ZeroMemory(dataIv);
         }
-    }
-
-    private static Aes CreateAes(byte[] key, byte[] iv, bool usePkcs7Padding = false)
-    {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(iv);
-        if (key.Length != KeySize)
-        {
-            throw new ArgumentException($@"Key length must be {KeySize} bytes for AES-256.", nameof(key));
-        }
-        if (iv.Length != AesBlockSize)
-        {
-            throw new ArgumentException($@"IV length must be {AesBlockSize} bytes.", nameof(iv));
-        }
-
-        var aes = Aes.Create();
-        aes.KeySize = KeySize * 8;
-        aes.BlockSize = AesBlockSize * 8;
-        aes.Padding = usePkcs7Padding ? PaddingMode.PKCS7 : PaddingMode.None;
-        aes.Mode = CipherMode.CBC;
-        aes.Key = key;
-        aes.IV = iv;
-        return aes;
     }
 
     private static byte[] EncryptMainKeyAndIv(byte[] key, byte[] iv, byte[] internalKey, byte[] ivInternal)
     {
-        using var cipher = CreateAes(key, iv);
+        using var cipher = AesFactory.Create(key, iv);
         using var msEncrypt = new MemoryStream();
         using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateEncryptor(), CryptoStreamMode.Write);
         cryptoStream.Write(ivInternal, 0, ivInternal.Length);
@@ -538,7 +313,7 @@ public class AesCrypt
 
     private static (byte[], byte[]) DecryptMainKeyAndIv(byte[] key, byte[] iv, byte[] encryptedMainKeyIv)
     {
-        using var cipher = CreateAes(key, iv);
+        using var cipher = AesFactory.Create(key, iv);
         using var msEncrypt = new MemoryStream(encryptedMainKeyIv);
         using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateDecryptor(), CryptoStreamMode.Read);
         var ivInternal = new byte[16];
@@ -550,19 +325,4 @@ public class AesCrypt
         return (ivInternal, internalKey);
     }
 
-
-
-    private static byte[] ReadBytes(Stream stream, int bufferSize)
-    {
-        try
-        {
-            var buffer = new byte[bufferSize];
-            stream.ReadExactly(buffer, 0, bufferSize);
-            return buffer;
-        }
-        catch (EndOfStreamException ex)
-        {
-            throw new InvalidOperationException(Resources.TheFileIsCorrupt, ex);
-        }
-    }
 }

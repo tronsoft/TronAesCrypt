@@ -42,5 +42,9 @@
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TronAesCrypt.Core.Tests" />
+  </ItemGroup>
 
 </Project>
