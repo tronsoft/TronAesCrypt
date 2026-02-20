@@ -151,9 +151,9 @@ public class AesCrypt
     /// </exception>
     public void DecryptStream(Stream inStream, Stream outStream, string password, int bufferSize)
     {
-        ArgumentNullException.ThrowIfNull(inStream, nameof(inStream));
-        ArgumentNullException.ThrowIfNull(outStream, nameof(outStream));
-        ArgumentNullException.ThrowIfNull(password, nameof(password));
+        ArgumentNullException.ThrowIfNull(inStream);
+        ArgumentNullException.ThrowIfNull(outStream);
+        ArgumentNullException.ThrowIfNull(password);
 
         // Validate the buffer size
         if (bufferSize % AesBlockSize != 0)
@@ -169,7 +169,9 @@ public class AesCrypt
 
         // Validate stream seekability
         if (!inStream.CanSeek)
+        {
             throw new ArgumentException("Input stream must be seekable for decryption (v2/v3 format requires reading file header and trailer).", nameof(inStream));
+        }
 
         // Read header and detect version
         var version = _aesCryptHeader.ReadHeader(inStream);
@@ -242,7 +244,9 @@ public class AesCrypt
         finally
         {
             if (key != null)
+            {
                 CryptographicOperations.ZeroMemory(key);
+            }
         }
     }
 
@@ -265,9 +269,9 @@ public class AesCrypt
     /// <returns>The encrypted stream.</returns>
     public void EncryptStream(Stream inStream, Stream outStream, string password, int bufferSize, int kdfIterations = 300_000)
     {
-        ArgumentNullException.ThrowIfNull(inStream, nameof(inStream));
-        ArgumentNullException.ThrowIfNull(outStream, nameof(outStream));
-        ArgumentNullException.ThrowIfNull(password, nameof(password));
+        ArgumentNullException.ThrowIfNull(inStream);
+        ArgumentNullException.ThrowIfNull(outStream);
+        ArgumentNullException.ThrowIfNull(password);
 
         // Validate the buffer size
         if (bufferSize % AesBlockSize != 0)
@@ -330,27 +334,20 @@ public class AesCrypt
 
     private static byte[] EncryptDataV3(Stream inStream, Stream outStream, byte[] internalKey, byte[] iv, int bufferSize)
     {
-        // Use PKCS#7 padding for v3
         using var cipher = CreateAes(internalKey, iv, usePkcs7Padding: true);
         using var hmac0 = new HMACSHA256(internalKey);
         hmac0.Initialize();
         
         using var hmacStream = new HmacComputingStream(outStream, hmac0);
-        
-        // Encrypt data and compute HMAC incrementally
-        // Use leaveOpen: true to prevent CryptoStream from disposing hmacStream
-        using (var cryptoStream = new CryptoStream(hmacStream, cipher.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true))
+        using var cryptoStream = new CryptoStream(hmacStream, cipher.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true);
+        int bytesRead;
+        var buffer = new byte[bufferSize];
+        while ((bytesRead = inStream.Read(buffer, 0, buffer.Length)) > 0)
         {
-            int bytesRead;
-            var buffer = new byte[bufferSize];
-            while ((bytesRead = inStream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                cryptoStream.Write(buffer, 0, bytesRead);
-            }
-
-            cryptoStream.FlushFinalBlock();
+            cryptoStream.Write(buffer, 0, bytesRead);
         }
-        // CryptoStream is now disposed, all data has been written to hmacStream
+
+        cryptoStream.FlushFinalBlock();
 
         return hmacStream.GetHmacHash();
     }
@@ -405,7 +402,8 @@ public class AesCrypt
                 {
                     throw new InvalidOperationException(Resources.TheFileIsCorrupt);
                 }
-
+                
+                
                 void ReadEncryptedBytes(int bytesToRead = AesBlockSize)
                 {
                     var buffer = new byte[bytesToRead];
@@ -493,9 +491,13 @@ public class AesCrypt
         finally
         {
             if (internalKey != null)
+            {
                 CryptographicOperations.ZeroMemory(internalKey);
+            }
             if (dataIv != null)
+            {
                 CryptographicOperations.ZeroMemory(dataIv);
+            }
         }
     }
 
@@ -536,27 +538,16 @@ public class AesCrypt
 
     private static (byte[], byte[]) DecryptMainKeyAndIv(byte[] key, byte[] iv, byte[] encryptedMainKeyIv)
     {
-        byte[] ivInternal = null;
-        byte[] internalKey = null;
-        try
-        {
-            using var cipher = CreateAes(key, iv);
-            using var msEncrypt = new MemoryStream(encryptedMainKeyIv);
-            using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateDecryptor(), CryptoStreamMode.Read);
-            ivInternal = new byte[16];
-            cryptoStream.ReadExactly(ivInternal, 0, ivInternal.Length);
+        using var cipher = CreateAes(key, iv);
+        using var msEncrypt = new MemoryStream(encryptedMainKeyIv);
+        using var cryptoStream = new CryptoStream(msEncrypt, cipher.CreateDecryptor(), CryptoStreamMode.Read);
+        var ivInternal = new byte[16];
+        cryptoStream.ReadExactly(ivInternal, 0, ivInternal.Length);
 
-            internalKey = new byte[32];
-            cryptoStream.ReadExactly(internalKey, 0, internalKey.Length);
+        var internalKey = new byte[32];
+        cryptoStream.ReadExactly(internalKey, 0, internalKey.Length);
 
-            return (ivInternal, internalKey);
-        }
-        finally
-        {
-            // Note: We return the decrypted values, so they are still needed by the caller.
-            // The caller is responsible for zeroing these when done.
-            // This try/finally is defensive to ensure the cipher state is cleaned up.
-        }
+        return (ivInternal, internalKey);
     }
 
 
