@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using FluentAssertions;
 using TRONSoft.TronAesCrypt.Core.Decryptors;
 using TRONSoft.TronAesCrypt.Core.Helpers;
 using Xunit;
@@ -29,7 +28,7 @@ public class AesV3DecryptorTests
         sut.DecryptStream(inStream, outStream, Password, DefaultBufferSize);
 
         // Assert
-        outStream.ToArray().Should().Equal(plaintext);
+        Assert.Equal(plaintext, outStream.ToArray());
     }
 
     [Theory]
@@ -51,7 +50,7 @@ public class AesV3DecryptorTests
         sut.DecryptStream(inStream, outStream, Password, DefaultBufferSize);
 
         // Assert
-        outStream.ToArray().Should().Equal(plaintext);
+        Assert.Equal(plaintext, outStream.ToArray());
     }
 
     [Fact]
@@ -72,7 +71,7 @@ public class AesV3DecryptorTests
         var act = () => sut.DecryptStream(inStream, outStream, Password, DefaultBufferSize);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(act);
     }
 
     [Fact]
@@ -89,7 +88,7 @@ public class AesV3DecryptorTests
         var act = () => sut.DecryptStream(inStream, outStream, WrongPassword, DefaultBufferSize);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(act);
     }
 
     /// <summary>

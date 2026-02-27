@@ -118,7 +118,12 @@ internal sealed class AesV2Decryptor : IAesDecryptor
 
         // Get padding and hmac
         inStream.Position = endPositionEncryptedData;
-        var padding = (16 - inStream.ReadBytes(1)[0]) % 16;
+        var moduloByte = inStream.ReadBytes(1)[0];
+        if (moduloByte >= AesBlockSize)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+        }
+        var padding = (16 - moduloByte) % 16;
         var hmacEncryptedData = inStream.ReadBytes(32);
 
         // Reset the position to the beginning of the encrypted data

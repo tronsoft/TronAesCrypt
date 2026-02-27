@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using AutoFixture;
-using FluentAssertions;
 using TRONSoft.TronAesCrypt.Core.Decryptors;
 using TRONSoft.TronAesCrypt.Core.Extensions;
 using TRONSoft.TronAesCrypt.Core.Helpers;
@@ -33,7 +32,7 @@ public class AesV2DecryptorTests
         decryptor.DecryptStream(inStream, outStream, Password, 64 * 1024);
 
         // Assert
-        outStream.ToArray().Should().Equal(plaintext);
+        Assert.Equal(plaintext, outStream.ToArray());
     }
 
     [Theory]
@@ -54,7 +53,7 @@ public class AesV2DecryptorTests
         decryptor.DecryptStream(inStream, outStream, Password, 64 * 1024);
 
         // Assert
-        outStream.ToArray().Should().Equal(plaintext);
+        Assert.Equal(plaintext, outStream.ToArray());
     }
 
     [Fact]
@@ -64,8 +63,8 @@ public class AesV2DecryptorTests
         var plaintext = RandomSaltGenerator.Generate(32);
         var streamBytes = BuildV2FileStream(plaintext, Password).ToArray();
 
-        // Flip the last ciphertext byte (just before the 32-byte final HMAC)
-        streamBytes[streamBytes.Length - HmacSize - 1] ^= 0xFF;
+        // Flip a byte in the ciphertext (just before the modulo byte and 32-byte final HMAC)
+        streamBytes[streamBytes.Length - HmacSize - 2] ^= 0xFF;
 
         using var inStream = new MemoryStream(streamBytes);
         using var outStream = new MemoryStream();
@@ -75,7 +74,29 @@ public class AesV2DecryptorTests
         var act = () => decryptor.DecryptStream(inStream, outStream, Password, 16);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(act);
+    }
+
+    [Fact]
+    public void Decrypt_WithInvalidModuloByte_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var plaintext = RandomSaltGenerator.Generate(32);
+        var streamBytes = BuildV2FileStream(plaintext, Password).ToArray();
+
+        // The modulo byte is right before the 32-byte final HMAC.
+        // We set it to an invalid value (>= 16, e.g., 255)
+        streamBytes[streamBytes.Length - HmacSize - 1] = 255;
+
+        using var inStream = new MemoryStream(streamBytes);
+        using var outStream = new MemoryStream();
+        var decryptor = new AesV2Decryptor();
+
+        // Act
+        var act = () => decryptor.DecryptStream(inStream, outStream, Password, 16);
+
+        // Assert
+        Assert.Throws<InvalidOperationException>(act);
     }
 
     [Fact]
@@ -91,7 +112,7 @@ public class AesV2DecryptorTests
         var act = () => decryptor.DecryptStream(inStream, outStream, WrongPassword, 16);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(act);
     }
 
     /// <summary>
