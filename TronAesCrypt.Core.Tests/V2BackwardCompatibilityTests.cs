@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using AutoFixture;
+using TRONSoft.TronAesCrypt.Core.Extensions;
+using TRONSoft.TronAesCrypt.Core.Helpers;
 using Xunit;
 
 namespace TRONSoft.TronAesCrypt.Core.Tests;
@@ -62,7 +64,7 @@ public class V2BackwardCompatibilityTests : IDisposable
     public void DecryptStream_WithV2FormatVariousSizes_DecryptsSuccessfully(int dataSize)
     {
         // Arrange
-        var originalData = dataSize > 0 ? RandomSaltGenerator.Generate(dataSize) : Array.Empty<byte>();
+        var originalData = dataSize > 0 ? RandomSaltGenerator.Generate(dataSize) : [];
         var v2EncryptedStream = CreateV2EncryptedStream(originalData, Password);
         
         var crypter = new AesCrypt();

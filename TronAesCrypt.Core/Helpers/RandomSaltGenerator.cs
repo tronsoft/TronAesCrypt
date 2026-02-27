@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 
-namespace TRONSoft.TronAesCrypt.Core;
+namespace TRONSoft.TronAesCrypt.Core.Helpers;
 
 public static class RandomSaltGenerator
 {

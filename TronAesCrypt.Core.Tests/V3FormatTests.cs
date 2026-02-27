@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using AutoFixture;
+using TRONSoft.TronAesCrypt.Core.Extensions;
 using Xunit;
 
 namespace TRONSoft.TronAesCrypt.Core.Tests;

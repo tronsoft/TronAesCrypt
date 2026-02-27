@@ -1,7 +1,8 @@
 using System;
 using System.Security.Cryptography;
+using TRONSoft.TronAesCrypt.Core.Extensions;
 
-namespace TRONSoft.TronAesCrypt.Core;
+namespace TRONSoft.TronAesCrypt.Core.KeyDerivation;
 
 /// <summary>
 /// Implements PBKDF2-HMAC-SHA512 key derivation for AES Crypt v3.
@@ -21,7 +22,7 @@ internal class Pbkdf2HmacSha512KeyDerivation : IKeyDerivationFunction
     {
         if (iterations < MinKdfIterations || iterations > MaxKdfIterations)
         {
-            throw new ArgumentOutOfRangeException(nameof(iterations), $"Iterations must be between {MinKdfIterations:N0} and {MaxKdfIterations:N0}");
+            throw new ArgumentOutOfRangeException(nameof(iterations), @$"Iterations must be between {MinKdfIterations:N0} and {MaxKdfIterations:N0}");
         }
 
         _iterations = iterations;

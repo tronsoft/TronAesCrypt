@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using TRONSoft.TronAesCrypt.Core.Extensions;
 
 namespace TRONSoft.TronAesCrypt.Core;
 
@@ -37,22 +38,28 @@ public class AesCryptHeader
         stream.Write(iterationBytes, 0, iterationBytes.Length);
     }
 
-    public AesCryptVersion ReadHeader(Stream inStream)
+    public AesCryptVersion PeekAesCryptVersion(Stream inStream)
     {
-        var buffer = new byte[3];
         try
         {
-            inStream.ReadExactly(buffer, 0, 3);
+            ReadAesMarker(inStream);
+            // Read version (AES Crypt file format)
+            var versionByte = inStream.ReadByte();
+            if (versionByte != 2 && versionByte != 3)
+            {
+                throw new InvalidOperationException(string.Format(Resources.UnsupportedAesCryptVersion, versionByte));
+            }
+            return (AesCryptVersion)versionByte;
         }
-        catch (EndOfStreamException ex)
+        finally
         {
-            throw new InvalidOperationException(Resources.TheFileIsCorrupt, ex);
+            inStream.Seek(0, SeekOrigin.Begin);
         }
+    }
 
-        if (!buffer.GetUtf8String().Equals(AesHeader))
-        {
-            throw new InvalidOperationException(Resources.NotAnAescryptFile);
-        }
+    public AesCryptVersion ReadHeader(Stream inStream)
+    {
+        ReadAesMarker(inStream);
 
         // Read version (AES Crypt file format)
         var versionByte = inStream.ReadByte();
@@ -66,10 +73,17 @@ public class AesCryptHeader
         // Read reserved byte.
         inStream.ReadByte();
 
+        ReadExtensions(inStream);
+
+        return version;
+    }
+
+    private static void ReadExtensions(Stream inStream)
+    {
         // Read the extensions
         while (true)
         {
-            buffer = new byte[2];
+            var buffer = new byte[2];
             var extensionLengthBytesRead = inStream.Read(buffer, 0, buffer.Length);
             if (extensionLengthBytesRead != 2)
             {
@@ -108,8 +122,6 @@ public class AesCryptHeader
                 totalBytesRead += bytesReadThisIteration;
             }
         }
-
-        return version;
     }
 
     private void WriteExtensions(Stream outStream)
@@ -140,5 +152,22 @@ public class AesCryptHeader
         // write end-of-extensions tag
         outStream.WriteByte(0);
         outStream.WriteByte(0);
+    }
+
+    private static void ReadAesMarker(Stream inStream)
+    {
+        var buffer = new byte[3];
+        try
+        {
+            inStream.ReadExactly(buffer, 0, 3);
+        }
+        catch (EndOfStreamException ex)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt, ex);
+        }
+        if (!buffer.GetUtf8String().Equals(AesHeader))
+        {
+            throw new InvalidOperationException(Resources.NotAnAescryptFile);
+        }
     }
 }

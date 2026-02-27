@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace TRONSoft.TronAesCrypt.Core;
+namespace TRONSoft.TronAesCrypt.Core.Extensions;
 
 internal static class StreamExtensions
 {

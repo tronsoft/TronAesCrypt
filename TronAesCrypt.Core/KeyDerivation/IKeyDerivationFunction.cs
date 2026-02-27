@@ -1,4 +1,4 @@
-namespace TRONSoft.TronAesCrypt.Core;
+namespace TRONSoft.TronAesCrypt.Core.KeyDerivation;
 
 /// <summary>
 /// Interface for key derivation functions used to stretch passwords.

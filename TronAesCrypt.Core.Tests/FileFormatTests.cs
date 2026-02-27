@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using AutoFixture;
+using TRONSoft.TronAesCrypt.Core.Extensions;
+using TRONSoft.TronAesCrypt.Core.Helpers;
 using Xunit;
 
 namespace TRONSoft.TronAesCrypt.Core.Tests;

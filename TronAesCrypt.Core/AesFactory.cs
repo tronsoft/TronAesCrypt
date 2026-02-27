@@ -23,12 +23,12 @@ internal static class AesFactory
         ArgumentNullException.ThrowIfNull(iv);
         if (key.Length != KeySize)
         {
-            throw new ArgumentException($"Key length must be {KeySize} bytes for AES-256.", nameof(key));
+            throw new ArgumentException(@$"Key length must be {KeySize} bytes for AES-256.", nameof(key));
         }
 
         if (iv.Length != AesBlockSize)
         {
-            throw new ArgumentException($"IV length must be {AesBlockSize} bytes.", nameof(iv));
+            throw new ArgumentException(@$"IV length must be {AesBlockSize} bytes.", nameof(iv));
         }
 
         var aes = Aes.Create();

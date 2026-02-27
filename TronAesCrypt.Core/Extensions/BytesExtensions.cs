@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace TRONSoft.TronAesCrypt.Core;
+namespace TRONSoft.TronAesCrypt.Core.Extensions;
 
 public static class BytesExtensions
 {

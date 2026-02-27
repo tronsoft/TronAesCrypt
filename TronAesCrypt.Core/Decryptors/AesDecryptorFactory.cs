@@ -1,4 +1,4 @@
-namespace TRONSoft.TronAesCrypt.Core;
+namespace TRONSoft.TronAesCrypt.Core.Decryptors;
 
 /// <summary>
 /// Creates the appropriate <see cref="IAesDecryptor"/> for a given AES Crypt stream format version.

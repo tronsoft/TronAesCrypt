@@ -1,7 +1,8 @@
 using System;
 using System.Security.Cryptography;
+using TRONSoft.TronAesCrypt.Core.Extensions;
 
-namespace TRONSoft.TronAesCrypt.Core;
+namespace TRONSoft.TronAesCrypt.Core.KeyDerivation;
 
 /// <summary>
 /// Implements SHA-256 iterative key derivation for AES Crypt v2 backward compatibility.
