@@ -39,10 +39,10 @@ internal class Pbkdf2HmacSha512KeyDerivation : IKeyDerivationFunction
         ArgumentNullException.ThrowIfNull(password);
         ArgumentNullException.ThrowIfNull(salt);
 
-        // UTF-16 LE encoding is REQUIRED by the AES Crypt specification for cross-platform compatibility.
-        // Rfc2898DeriveBytes.GetBytes() with string parameter uses UTF-8, which is incompatible.
-        // The GetUtf16Bytes() extension provides UTF-16 LE encoding as specified.
-        var passwordBytes = password.GetUtf16Bytes();
+        // AES Crypt stream format v3 uses raw UTF-8 bytes for the PBKDF2 password input.
+        // This differs from v2, which used UTF-16 LE. Using UTF-8 here is required for
+        // interoperability with the official AES Crypt 4.x implementation.
+        var passwordBytes = password.GetUtf8Bytes();
         try
         {
             return Rfc2898DeriveBytes.Pbkdf2(
