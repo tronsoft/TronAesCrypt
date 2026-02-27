@@ -27,18 +27,25 @@ internal class Sha256IterativeKeyDerivation : IKeyDerivationFunction
         // Rfc2898DeriveBytes.GetBytes() with string parameter uses UTF-8, which is incompatible.
         // The GetUtf16Bytes() extension provides UTF-16 LE encoding as specified.
         var passwordBytes = password.GetUtf16Bytes();
-        using var hash = SHA256.Create();
-        var key = new byte[KeySize];
-        Array.Copy(salt, key, salt.Length);
-
-        for (var i = 0; i < Iterations; i++)
+        try
         {
-            hash.Initialize();
-            hash.TransformBlock(key, 0, key.Length, key, 0);
-            hash.TransformFinalBlock(passwordBytes, 0, passwordBytes.Length);
-            key = hash.Hash!;
-        }
+            using var hash = SHA256.Create();
+            var key = new byte[KeySize];
+            Array.Copy(salt, key, salt.Length);
 
-        return key;
+            for (var i = 0; i < Iterations; i++)
+            {
+                hash.Initialize();
+                hash.TransformBlock(key, 0, key.Length, key, 0);
+                hash.TransformFinalBlock(passwordBytes, 0, passwordBytes.Length);
+                key = hash.Hash!;
+            }
+
+            return key;
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
+        }
     }
 }

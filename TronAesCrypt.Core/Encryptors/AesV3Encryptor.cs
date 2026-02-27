@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using TRONSoft.TronAesCrypt.Core.Helpers;
@@ -45,27 +45,34 @@ internal class AesV3Encryptor :IAesEncryptor
 
         var kdf = new Pbkdf2HmacSha512KeyDerivation(kdfIterations);
         var key = kdf.DeriveKey(password, ivMainKey);
-
         var internalKey = RandomSaltGenerator.Generate(32);
-        var encryptedMainKeyIv = EncryptMainKeyAndIv(key, ivMainKey, internalKey, ivData);
-
-        _aesCryptHeader.WriteHeaderV3(outStream, kdfIterations);
-        outStream.Write(ivMainKey, 0, ivMainKey.Length);
-        outStream.Write(encryptedMainKeyIv, 0, encryptedMainKeyIv.Length);
-
-        using (var hmacMainKeyIv = new HMACSHA256(key))
+        try
         {
-            var dataToHash = new byte[encryptedMainKeyIv.Length + 1];
-            Array.Copy(encryptedMainKeyIv, dataToHash, encryptedMainKeyIv.Length);
-            dataToHash[encryptedMainKeyIv.Length] = 0x03;
-            var hash = hmacMainKeyIv.ComputeHash(dataToHash);
-            outStream.Write(hash, 0, hash.Length);
+            var encryptedMainKeyIv = EncryptMainKeyAndIv(key, ivMainKey, internalKey, ivData);
+
+            _aesCryptHeader.WriteHeaderV3(outStream, kdfIterations);
+            outStream.Write(ivMainKey, 0, ivMainKey.Length);
+            outStream.Write(encryptedMainKeyIv, 0, encryptedMainKeyIv.Length);
+
+            using (var hmacMainKeyIv = new HMACSHA256(key))
+            {
+                var dataToHash = new byte[encryptedMainKeyIv.Length + 1];
+                Array.Copy(encryptedMainKeyIv, dataToHash, encryptedMainKeyIv.Length);
+                dataToHash[encryptedMainKeyIv.Length] = 0x03;
+                var hash = hmacMainKeyIv.ComputeHash(dataToHash);
+                outStream.Write(hash, 0, hash.Length);
+            }
+
+            var hmac0Value = EncryptDataV3(inStream, outStream, internalKey, ivData, bufferSize);
+
+            // V3: No modulo byte, just the HMAC
+            outStream.Write(hmac0Value, 0, hmac0Value.Length);
         }
-
-        var hmac0Value = EncryptDataV3(inStream, outStream, internalKey, ivData, bufferSize);
-
-        // V3: No modulo byte, just the HMAC
-        outStream.Write(hmac0Value, 0, hmac0Value.Length);
+        finally
+        {
+            CryptographicOperations.ZeroMemory(key);
+            CryptographicOperations.ZeroMemory(internalKey);
+        }
     }
 
     private static byte[] EncryptMainKeyAndIv(byte[] key, byte[] iv, byte[] internalKey, byte[] ivInternal)

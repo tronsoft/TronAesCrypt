@@ -43,12 +43,18 @@ internal class Pbkdf2HmacSha512KeyDerivation : IKeyDerivationFunction
         // Rfc2898DeriveBytes.GetBytes() with string parameter uses UTF-8, which is incompatible.
         // The GetUtf16Bytes() extension provides UTF-16 LE encoding as specified.
         var passwordBytes = password.GetUtf16Bytes();
-
-        return Rfc2898DeriveBytes.Pbkdf2(
-            passwordBytes,
-            salt,
-            _iterations,
-            HashAlgorithmName.SHA512,
-            32); // 256 bits
+        try
+        {
+            return Rfc2898DeriveBytes.Pbkdf2(
+                passwordBytes,
+                salt,
+                _iterations,
+                HashAlgorithmName.SHA512,
+                32); // 256 bits
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
+        }
     }
 }

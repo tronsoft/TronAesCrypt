@@ -44,12 +44,10 @@ internal sealed class AesV2Decryptor : IAesDecryptor
         var version = _aesCryptHeader.ReadHeader(inStream);
         var ivMain = inStream.ReadBytes(16);
 
-        byte[] key = null;
+        var kdf = new Sha256IterativeKeyDerivation();
+        var key = kdf.DeriveKey(password, ivMain);
         try
         {
-            var kdf = new Sha256IterativeKeyDerivation();
-            key = kdf.DeriveKey(password, ivMain);
-
             var mainKeyAndIvRead = inStream.ReadBytes(48);
 
             using var hmac1 = new HMACSHA256(key);
@@ -67,10 +65,7 @@ internal sealed class AesV2Decryptor : IAesDecryptor
         }
         finally
         {
-            if (key != null)
-            {
-                CryptographicOperations.ZeroMemory(key);
-            }
+            CryptographicOperations.ZeroMemory(key);
         }
     }
 
@@ -83,15 +78,8 @@ internal sealed class AesV2Decryptor : IAesDecryptor
         }
         finally
         {
-            if (internalKey != null)
-            {
-                CryptographicOperations.ZeroMemory(internalKey);
-            }
-
-            if (dataIv != null)
-            {
-                CryptographicOperations.ZeroMemory(dataIv);
-            }
+            CryptographicOperations.ZeroMemory(internalKey);
+            CryptographicOperations.ZeroMemory(dataIv);
         }
     }
 
@@ -113,7 +101,7 @@ internal sealed class AesV2Decryptor : IAesDecryptor
     {
         var currentPosition = inStream.Position;
 
-        // V2: Has modulo byte before final HMAC
+        // Has modulo byte before final HMAC
         var endPositionEncryptedData = inStream.Length - 32 - 1;
 
         // Get padding and hmac

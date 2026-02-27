@@ -48,11 +48,10 @@ internal sealed class AesV3Decryptor : IAesDecryptor
         var kdfIterations = GetkdfIterations(inStream);
         var ivMain = inStream.ReadBytes(16);
 
-        byte[] key = null;
+        var kdf = new Pbkdf2HmacSha512KeyDerivation(kdfIterations);
+        var key = kdf.DeriveKey(password, ivMain);
         try
         {
-            var kdf = new Pbkdf2HmacSha512KeyDerivation(kdfIterations);
-            key = kdf.DeriveKey(password, ivMain);
             var mainKeyAndIvRead = inStream.ReadBytes(48);
 
             using var hmac1 = new HMACSHA256(key);
@@ -72,10 +71,7 @@ internal sealed class AesV3Decryptor : IAesDecryptor
         }
         finally
         {
-            if (key != null)
-            {
-                CryptographicOperations.ZeroMemory(key);
-            }
+            CryptographicOperations.ZeroMemory(key);
         }
     }
 
@@ -88,15 +84,8 @@ internal sealed class AesV3Decryptor : IAesDecryptor
         }
         finally
         {
-            if (internalKey != null)
-            {
-                CryptographicOperations.ZeroMemory(internalKey);
-            }
-
-            if (dataIv != null)
-            {
-                CryptographicOperations.ZeroMemory(dataIv);
-            }
+            CryptographicOperations.ZeroMemory(internalKey);
+            CryptographicOperations.ZeroMemory(dataIv);
         }
     }
 
@@ -118,7 +107,7 @@ internal sealed class AesV3Decryptor : IAesDecryptor
     {
         var currentPosition = inStream.Position;
 
-        // V3: No modulo byte, just HMAC at the end, and uses PKCS#7 padding
+        // No modulo byte, just HMAC at the end, and uses PKCS#7 padding
         var endPositionEncryptedData = inStream.Length - 32;
         var encryptedLength = endPositionEncryptedData - currentPosition;
 
