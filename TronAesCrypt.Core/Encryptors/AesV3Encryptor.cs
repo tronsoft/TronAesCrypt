@@ -7,7 +7,7 @@ using TRONSoft.TronAesCrypt.Core.Streams;
 
 namespace TRONSoft.TronAesCrypt.Core.Encryptors;
 
-internal class AesV3Encryptor :IAesEncryptor
+internal class AesV3Encryptor : IAesEncryptor
 {
     private const int MinKdfIterations = 10_000;
     private const int MaxKdfIterations = 10_000_000;
