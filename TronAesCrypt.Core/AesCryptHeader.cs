@@ -7,7 +7,7 @@ namespace TRONSoft.TronAesCrypt.Core;
 public class AesCryptHeader
 {
     private const string AesHeader = "AES";
-    public const string Version = "2.0.0";
+    public const string Version = "3.0.0";
     public const string AppName = "TronAesCrypt";
 
     public void WriteHeader(Stream stream, AesCryptVersion version)
