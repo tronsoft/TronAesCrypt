@@ -70,15 +70,6 @@ namespace TRONSoft.TronAesCrypt.Core {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Only AesCrypt version 2 is supported..
-        /// </summary>
-        internal static string OnlyAesCryptVersion2IsSupported {
-            get {
-                return ResourceManager.GetString("OnlyAesCryptVersion2IsSupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to The file is corrupt..
         /// </summary>
         internal static string TheFileIsCorrupt {
