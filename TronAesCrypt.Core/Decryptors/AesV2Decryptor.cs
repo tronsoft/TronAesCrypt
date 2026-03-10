@@ -41,7 +41,7 @@ internal sealed class AesV2Decryptor : IAesDecryptor
                 nameof(inStream));
         }
 
-        var version = _aesCryptHeader.ReadHeader(inStream);
+        _ = _aesCryptHeader.ReadHeader(inStream);
         var ivMain = inStream.ReadBytes(16);
 
         var kdf = new Sha256IterativeKeyDerivation();
@@ -101,8 +101,11 @@ internal sealed class AesV2Decryptor : IAesDecryptor
     {
         var currentPosition = inStream.Position;
 
-        // Has modulo byte before final HMAC
         var endPositionEncryptedData = inStream.Length - 32 - 1;
+        if (endPositionEncryptedData < currentPosition)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+        }
 
         // Get padding and hmac
         inStream.Position = endPositionEncryptedData;

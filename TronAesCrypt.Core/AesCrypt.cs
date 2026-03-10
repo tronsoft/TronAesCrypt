@@ -94,7 +94,6 @@ public class AesCrypt : IAesDecryptor, IAesEncryptor
     ///     The number of PBKDF2-HMAC-SHA512 iterations for key derivation (default: 300,000).
     ///     Higher values provide better security against brute-force attacks but increase processing time.
     /// </param>
-    /// <returns>The encrypted stream.</returns>
     public void EncryptStream(Stream inStream, Stream outStream, string password, int bufferSize, int kdfIterations = 300_000) =>
         new AesV3Encryptor().EncryptStream(inStream, outStream, password, bufferSize, kdfIterations);
 }

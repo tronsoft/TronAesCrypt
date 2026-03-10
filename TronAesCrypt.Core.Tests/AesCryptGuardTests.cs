@@ -73,6 +73,7 @@ public class AesCryptGuardTests
         inStream.WriteByte(0); // end of extensions tag hi
         inStream.WriteByte(0); // end of extensions tag lo
 
+        inStream.Position = 0;
         Assert.Throws<InvalidOperationException>(() => crypter.DecryptStream(inStream, outStream, Password, 16));
     }
 

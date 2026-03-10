@@ -30,7 +30,12 @@ internal sealed class HmacComputingStream(Stream innerStream, HMAC hmac) : Strea
             _finalized = true;
         }
 
-        return hmac.Hash ?? [];
+        if (hmac.Hash is null)
+        {
+            throw new InvalidOperationException("HMAC hash is not available after finalization.");
+        }
+
+        return hmac.Hash;
     }
 
     public override void Write(byte[] buffer, int offset, int count)

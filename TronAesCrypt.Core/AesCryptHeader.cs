@@ -7,7 +7,7 @@ namespace TRONSoft.TronAesCrypt.Core;
 public class AesCryptHeader
 {
     private const string AesHeader = "AES";
-    public const string Version = "3.0.0";
+    public const string Version = "2.0.0";
     public const string AppName = "TronAesCrypt";
 
     public void WriteHeader(Stream stream, AesCryptVersion version)
@@ -40,10 +40,10 @@ public class AesCryptHeader
 
     public AesCryptVersion PeekAesCryptVersion(Stream inStream)
     {
+        var originalPosition = inStream.Position;
         try
         {
             ReadAesMarker(inStream);
-            // Read version (AES Crypt file format)
             var versionByte = inStream.ReadByte();
             if (versionByte != 2 && versionByte != 3)
             {
@@ -53,7 +53,7 @@ public class AesCryptHeader
         }
         finally
         {
-            inStream.Seek(0, SeekOrigin.Begin);
+            inStream.Seek(originalPosition, SeekOrigin.Begin);
         }
     }
 

@@ -8,11 +8,11 @@ namespace TRONSoft.TronAesCrypt.Core.Encryptors;
 internal static class AesEncryptorFactory
 {
     /// <summary>
-    /// Returns the <see cref="version"/> implementation for the specified <paramref name="version"/>.
+    /// Returns an <see cref="IAesEncryptor"/> for the specified <paramref name="version"/>.
     /// </summary>
-    /// <param name="version">The AES Crypt stream format version detected in the file header.</param>
-    /// <returns>An <see cref="InvalidOperationException"/> that handles decryption for the given version.</returns>
-    /// <exception cref="System">Thrown when the version is not supported.</exception>
+    /// <param name="version">The AES Crypt stream format version to encrypt with.</param>
+    /// <returns>An <see cref="IAesEncryptor"/> that encrypts using the given version.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the version is not supported for encryption.</exception>
     internal static IAesEncryptor Create(AesCryptVersion version) => version switch
     {
         AesCryptVersion.V3 => new AesV3Encryptor(),

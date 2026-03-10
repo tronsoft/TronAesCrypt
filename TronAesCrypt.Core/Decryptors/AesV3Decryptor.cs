@@ -44,8 +44,8 @@ internal sealed class AesV3Decryptor : IAesDecryptor
                 nameof(inStream));
         }
 
-        var version = _aesCryptHeader.ReadHeader(inStream);
-        var kdfIterations = GetkdfIterations(inStream);
+        _ = _aesCryptHeader.ReadHeader(inStream);
+        var kdfIterations = GetKdfIterations(inStream);
         var ivMain = inStream.ReadBytes(16);
 
         var kdf = new Pbkdf2HmacSha512KeyDerivation(kdfIterations);
@@ -107,8 +107,11 @@ internal sealed class AesV3Decryptor : IAesDecryptor
     {
         var currentPosition = inStream.Position;
 
-        // No modulo byte, just HMAC at the end, and uses PKCS#7 padding
         var endPositionEncryptedData = inStream.Length - 32;
+        if (endPositionEncryptedData < currentPosition)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+        }
         var encryptedLength = endPositionEncryptedData - currentPosition;
 
         // Get hmac
@@ -158,15 +161,14 @@ internal sealed class AesV3Decryptor : IAesDecryptor
         }
     }
 
-    private int GetkdfIterations(Stream inStream)
+    private int GetKdfIterations(Stream inStream)
     {
-        var kdfIterations = 0;
         var iterationBytes = inStream.ReadBytes(4);
         if (BitConverter.IsLittleEndian)
         {
             Array.Reverse(iterationBytes);
         }
-        kdfIterations = BitConverter.ToInt32(iterationBytes, 0);
+        var kdfIterations = BitConverter.ToInt32(iterationBytes, 0);
         if (kdfIterations is < MinKdfIterations or > MaxKdfIterations)
         {
             throw new InvalidOperationException(Resources.TheFileIsCorrupt);
