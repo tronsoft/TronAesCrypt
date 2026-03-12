@@ -100,10 +100,10 @@ public class AesCryptHeader
                 Array.Reverse(buffer);
             }
 
-            var amountOfBytesToRead = BitConverter.ToInt16(buffer, 0);
+            var amountOfBytesToRead = BitConverter.ToUInt16(buffer, 0);
             
             // Add validation for extension length
-            if (amountOfBytesToRead <= 0)
+            if (amountOfBytesToRead == 0)
             {
                 throw new InvalidOperationException(Resources.TheFileIsCorrupt);
             }
