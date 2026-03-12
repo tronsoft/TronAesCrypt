@@ -50,7 +50,7 @@ internal class AesV3Encryptor : IAesEncryptor
         {
             var encryptedMainKeyIv = EncryptMainKeyAndIv(key, ivMainKey, internalKey, ivData);
 
-            _aesCryptHeader.WriteHeaderV3(outStream, kdfIterations);
+            _aesCryptHeader.WriteHeader(outStream, kdfIterations);
             outStream.Write(ivMainKey, 0, ivMainKey.Length);
             outStream.Write(encryptedMainKeyIv, 0, encryptedMainKeyIv.Length);
 

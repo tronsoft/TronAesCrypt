@@ -10,7 +10,14 @@ public class AesCryptHeader
     public const string Version = "2.0.0";
     public const string AppName = "TronAesCrypt";
 
-    public void WriteHeader(Stream stream, AesCryptVersion version)
+    [Obsolete("Writing v2 headers is no longer supported. Use WriteHeader(Stream, int) to write a v3 header instead.", error: true)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public void WriteHeader(Stream stream)
+    {
+        throw new NotSupportedException("Writing AES Crypt v2 headers is no longer supported in this version.");
+    }
+
+    private void WriteHeader(Stream stream, AesCryptVersion version)
     {
         // Write header.
         var buffer = AesHeader.GetUtf8Bytes();
@@ -25,7 +32,7 @@ public class AesCryptHeader
         WriteExtensions(stream);
     }
 
-    public void WriteHeaderV3(Stream stream, int kdfIterations)
+    public void WriteHeader(Stream stream, int kdfIterations)
     {
         WriteHeader(stream, AesCryptVersion.V3);
 
