@@ -1,31 +1,33 @@
 using System;
+using System.Reflection;
 
 namespace TronAesCrypt.Main.Tests;
 
 /// <summary>
-/// Class to do some basic operations on AesCrypt.
+/// Invokes the AesCrypt program entry point in-process for testing.
 /// </summary>
 public static class AesCryptProcessRunner
 {
-    public static bool CanEncrypt(string fileName, string outputFileName, string password) => CanCrypt(fileName, outputFileName, password);
+    public static bool CanEncrypt(string fileName, string outputFileName, string password) =>
+        RunArgs(["-e", "-p", password, "-o", outputFileName, "-f", fileName]) == 0;
 
-    public static bool CanDecrypt(string fileName, string outputFileName, string password) => CanCrypt(fileName, outputFileName, password, false);
+    public static bool CanDecrypt(string fileName, string outputFileName, string password) =>
+        RunArgs(["-d", "-p", password, "-o", outputFileName, "-f", fileName]) == 0;
 
-    private static bool CanCrypt(string fileName, string outputFileName, string password, bool encrypt = true)
+    public static bool CanEncryptPositional(string fileName, string outputFileName, string password) =>
+        RunArgs(["-e", "-p", password, "-o", outputFileName, fileName]) == 0;
+
+    public static bool CanDecryptPositional(string fileName, string outputFileName, string password) =>
+        RunArgs(["-d", "-p", password, "-o", outputFileName, fileName]) == 0;
+
+    public static int RunArgs(string[] args)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputFileName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(password);
-
-        var methodInfo = typeof(Program).Assembly.EntryPoint;
-        if (methodInfo == null)
+        var entryPoint = typeof(Program).Assembly.EntryPoint;
+        if (entryPoint is null)
         {
-            return false;
+            return 1;
         }
 
-        var cryptMethod = encrypt ? "-e" : "-d";
-        var args = new[] { cryptMethod, "-p", password, "-o", outputFileName, "-f", fileName };
-        var exitCode = Convert.ToInt32(methodInfo.Invoke(null, [args]) ?? 1);
-        return exitCode == 0;
+        return Convert.ToInt32(entryPoint.Invoke(null, [args]) ?? 1);
     }
 }

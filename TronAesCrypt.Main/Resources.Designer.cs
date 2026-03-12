@@ -77,5 +77,41 @@ namespace TronAesCrypt.Main {
                 return ResourceManager.GetString("You_must_specify_either_encrypt_or_decrypt_option", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You must specify a password with -p..
+        /// </summary>
+        internal static string You_must_specify_a_password {
+            get {
+                return ResourceManager.GetString("You_must_specify_a_password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You must specify an input file..
+        /// </summary>
+        internal static string You_must_specify_an_input_file {
+            get {
+                return ResourceManager.GetString("You_must_specify_an_input_file", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Do not use both -f and a positional file argument..
+        /// </summary>
+        internal static string Do_not_mix_f_flag_with_positional_arguments {
+            get {
+                return ResourceManager.GetString("Do_not_mix_f_flag_with_positional_arguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot auto-determine output file for '{0}'..
+        /// </summary>
+        internal static string Cannot_auto_determine_output_file {
+            get {
+                return ResourceManager.GetString("Cannot_auto_determine_output_file", resourceCulture);
+            }
+        }
     }
 }

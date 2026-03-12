@@ -123,4 +123,16 @@
   <data name="You_must_specify_either_encrypt_or_decrypt_option" xml:space="preserve">
     <value>You must specify either -e (encrypt) or -d (decrypt).</value>
   </data>
+  <data name="You_must_specify_a_password" xml:space="preserve">
+    <value>You must specify a password with -p.</value>
+  </data>
+  <data name="You_must_specify_an_input_file" xml:space="preserve">
+    <value>You must specify an input file.</value>
+  </data>
+  <data name="Do_not_mix_f_flag_with_positional_arguments" xml:space="preserve">
+    <value>Do not use both -f and a positional file argument. Use one or the other.</value>
+  </data>
+  <data name="Cannot_auto_determine_output_file" xml:space="preserve">
+    <value>Cannot auto-determine output file for '{0}': file does not have a .aes extension. Specify -o explicitly.</value>
+  </data>
 </root>
