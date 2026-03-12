@@ -21,10 +21,11 @@
     <data name="NotAnAescryptFile" xml:space="preserve">
         <value>Not an AesCrypt file.</value>
     </data>
-    <data name="OnlyAesCryptVersion2IsSupported" xml:space="preserve">
-        <value>Only AesCrypt version 2 is supported.</value>
-    </data>
+
     <data name="TheFileIsCorrupt" xml:space="preserve">
         <value>The file is corrupt.</value>
+    </data>
+    <data name="UnsupportedAesCryptVersion" xml:space="preserve">
+        <value>Unsupported AES Crypt version: {0}. Only versions 2 and 3 are supported.</value>
     </data>
 </root>

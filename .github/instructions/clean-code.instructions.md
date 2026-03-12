@@ -155,6 +155,75 @@ Write code for humans first, computers second. Code is read far more often than 
 - **Commented-Out Code**: Delete it; version control has your back
 - **HTML in Comments**: Makes comments hard to read
 
+- **Section-Header Comments**: Don't label blocks of code with what they do — the code already says that. If a block needs a label, extract it into a well-named method.
+
+  ```csharp
+  // Bad
+  // Validate the buffer size
+  if (bufferSize % AesBlockSize != 0)
+      throw new ArgumentException("...");
+
+  // Validate password length
+  if (password.Length > MaxPassLen)
+      throw new ArgumentException("...");
+
+  // Good: no comments needed — the code is self-explanatory
+  if (bufferSize % AesBlockSize != 0)
+      throw new ArgumentException("...");
+
+  if (password.Length > MaxPassLen)
+      throw new ArgumentException("...");
+  ```
+
+- **Closing-Brace Labels**: Don't annotate closing braces. Shorten the method instead.
+
+  ```csharp
+  // Bad
+  for (var i = 0; i < count; i++)
+  {
+      ...
+  } // end for
+
+  if (version == AesCryptVersion.V2)
+  {
+      ...
+  } // end if (version == V2)
+  ```
+
+- **Journal / Change-Log Comments**: Don't record changes in source files. That is what version control is for.
+
+  ```csharp
+  // Bad
+  // 2024-01-15 John: Fixed HMAC comparison to use FixedTimeEquals
+  // 2023-11-02 Jane: Added V3 support
+  public void DecryptStream(...) { }
+  ```
+
+- **Mandated Doc Comments**: Don't add XML doc comments just to satisfy a rule when they add nothing beyond the name itself.
+
+  ```csharp
+  // Bad
+  /// <summary>Gets the password.</summary>
+  public string Password { get; }
+
+  // Good: only add a doc comment when it explains something the name does not
+  /// <summary>
+  /// Maximum password length imposed by the AES Crypt v2 spec (UTF-16 LE encoded).
+  /// </summary>
+  private const int MaxPassLen = 1024;
+  ```
+
+- **Position Markers / Banners**: Don't use decorative separators to divide regions of a file. If a file needs sections, it is too large — split it.
+
+  ```csharp
+  // Bad
+  ///////////////////////////////////////////////////////////////////////////
+  // PRIVATE METHODS
+  ///////////////////////////////////////////////////////////////////////////
+
+  // ---- Helpers ----
+  ```
+
 ### Comment Alternatives
 
 - **Better Names**: Instead of commenting a variable, rename it
@@ -287,6 +356,7 @@ Write code for humans first, computers second. Code is read far more often than 
 - Tests should be clean, readable, and maintainable
 - Follow the same standards as production code
 - Use descriptive test names: `MethodName_Condition_ExpectedResult()`
+- **AAA Pattern**: Always mark the three phases with `// Arrange`, `// Act`, `// Assert` comments. These are structural convention, not noise — they communicate intent about the test layout and are explicitly exempt from the "no section-header comments" rule.
 
 ### F.I.R.S.T. Principles
 

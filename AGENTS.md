@@ -11,6 +11,7 @@
 **→ For comprehensive guidance, see [.github/copilot-instructions.md](.github/copilot-instructions.md)**
 
 That file includes:
+
 - Stream Format v2 specification (complete byte layout)
 - Architecture & encryption flow details
 - Project-specific conventions (namespaces, versions, resources)
@@ -20,12 +21,13 @@ That file includes:
 - V3 upgrade path (future enhancement)
 
 **→ Coding standards: [.github/instructions/](.github/instructions/)**
+
 - `csharp-coding-standards.instructions.md` - C# 14 conventions
 - `clean-code.instructions.md` - General principles
 
 ## 🏗️ Project Structure
 
-```
+```text
 TronAesCrypt.Core/          # Library (published as NuGet package)
 TronAesCrypt.Main/          # CLI application (AesCrypt.exe)
 TronAesCrypt.Core.Tests/    # xUnit tests for Core
@@ -54,4 +56,6 @@ dotnet pack -c Release TronAesCrypt.Core/TronAesCrypt.Core.csproj
 - **UTF-16 LE for passwords**, UTF-8 for file format strings
 - **Custom padding with modulo byte** (not PKCS#7 - that's v3)
 - **Stream-first API** - file methods are convenience wrappers
+- **Control-flow braces are mandatory** - always use braces for `if`, `else`, `for`, `foreach`, `while`, and `using` blocks, even for a single statement
+- **Comments explain WHY only** — never add section-header, closing-brace, journal, mandated, or banner comments; remove them on sight. See `clean-code.instructions.md`.
 - **Namespace**: `TRONSoft.TronAesCrypt.Core` (note: TRONSoft, not TronSoft)

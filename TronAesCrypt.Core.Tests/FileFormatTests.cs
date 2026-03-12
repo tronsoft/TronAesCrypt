@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using AutoFixture;
+using TRONSoft.TronAesCrypt.Core.Extensions;
+using TRONSoft.TronAesCrypt.Core.Helpers;
 using Xunit;
 
 namespace TRONSoft.TronAesCrypt.Core.Tests;
@@ -59,10 +61,11 @@ public class FileFormatTests : IDisposable
         crypter.EncryptStream(inStream, outStream, password, bufferSize);
 
         // Assert
+        outStream.Position = 0;
         var buf = new byte[3];
         _ = outStream.Read(buf, 0, buf.Length);
         Assert.Equal("AES", buf.GetUtf8String());
-        Assert.Equal(2, outStream.ReadByte());
+        Assert.Equal(3, outStream.ReadByte());
         Assert.Equal(0, outStream.ReadByte());
         Assert.Equal(0, outStream.ReadByte());
         Assert.Equal((CreatedBy + AppName).Length + 1, outStream.ReadByte());
@@ -98,6 +101,7 @@ public class FileFormatTests : IDisposable
         crypter.EncryptStream(inStream, outStream, Password, 64 * 1024);
 
         // Act & Assert
+        outStream.Position = 0;
         crypter.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
     }
 

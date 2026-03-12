@@ -25,8 +25,7 @@ public static class AesCryptProcessRunner
 
         var cryptMethod = encrypt ? "-e" : "-d";
         var args = new[] { cryptMethod, "-p", password, "-o", outputFileName, "-f", fileName };
-        methodInfo.Invoke(null, [args]);
-        var exitCode = Convert.ToInt32(0);
+        var exitCode = Convert.ToInt32(methodInfo.Invoke(null, [args]) ?? 1);
         return exitCode == 0;
     }
 }

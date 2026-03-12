@@ -91,6 +91,7 @@ for i = 0 to 8191:
 - On decryption, this byte indicates how many bytes to remove
 
 Example:
+
 ```
 Plaintext size: 230 bytes
 230 % 16 = 6
@@ -104,6 +105,7 @@ Last byte in file: 0x06
 **Two HMACs protect the file:**
 
 1. **HMAC of encrypted session key/IV**: Verifies password is correct before attempting decryption
+
    ```
    HMAC-SHA256(48-byte encrypted session IV + key)
    ```
@@ -126,6 +128,7 @@ Extensions allow metadata insertion without re-encrypting:
 ### Why v2 Instead of v3?
 
 **Stream Format v3** was released after this project started and includes:
+
 - PBKDF2-HMAC-SHA512 (much stronger KDF)
 - 4-byte configurable iteration count field
 - HMAC includes version byte: `HMAC(data || 0x03)`
@@ -133,6 +136,7 @@ Extensions allow metadata insertion without re-encrypting:
 - 140-byte minimum footprint (vs 136 for v2)
 
 **This implementation uses v2 for**:
+
 - Broad compatibility with existing tools
 - Simpler implementation (no PBKDF2 dependency)
 - Established interoperability testing
@@ -144,15 +148,16 @@ Extensions allow metadata insertion without re-encrypting:
 To implement Stream Format v3 support, these changes are needed:
 
 1. **Replace `StretchPassword()` method**:
+
    ```csharp
    // Current v2: 8192 SHA-256 iterations
    for (var i = 0; i < 8192; i++) { ... }
-   
+
    // V3: PBKDF2-HMAC-SHA512
    using var kdf = new Rfc2898DeriveBytes(
-       passwordBytes, 
-       iv, 
-       iterations, 
+       passwordBytes,
+       iv,
+       iterations,
        HashAlgorithmName.SHA512);
    key = kdf.GetBytes(32);
    ```
@@ -162,12 +167,14 @@ To implement Stream Format v3 support, these changes are needed:
    - Default: 300,000+ iterations recommended (2023 OWASP guidelines)
 
 3. **Update HMAC calculation** to include version byte:
+
    ```csharp
    // V2: HMAC-SHA256(encrypted_session_data)
    // V3: HMAC-SHA256(encrypted_session_data || 0x03)
    ```
 
 4. **Remove modulo padding byte**, use PKCS#7 directly:
+
    ```csharp
    // V3 uses .NET's PaddingMode.PKCS7
    aes.Padding = PaddingMode.PKCS7;  // Instead of manual padding
@@ -242,6 +249,11 @@ Error messages live in `.resx` files compiled via `ResXFileCodeGenerator`:
 
 Both Core and Main projects have separate `Resources.resx` files with auto-generated `Resources.Designer.cs` companions.
 
+### Control-Flow Braces
+
+- Always use braces for control-flow statements, even for single-line bodies.
+- Applies to `if`, `else`, `for`, `foreach`, `while`, `do`, `using`, `lock`, and `fixed` blocks.
+
 ### Version Management
 
 - **Directory.Build.props** - Shared assembly version across all projects (`1.0.2.0`)
@@ -298,6 +310,7 @@ When adding features, maintain AES Crypt v2 compatibility:
 ## CI/CD Pipeline
 
 GitHub Actions workflows:
+
 - **`ci.yml`**: Primary workflow for modern branches with .NET 10 SDK
   - Runs on: `ubuntu-latest`
   - Triggers: Push/PR to `main`, `master`, `upgrade-to-NET10` branches

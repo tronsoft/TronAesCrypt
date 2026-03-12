@@ -54,7 +54,6 @@ public class AesCryptGuardTests
         using var inStream = new MemoryStream();
         using var outStream = new MemoryStream();
 
-        // Write wrong 3-byte magic instead of "AES"
         inStream.Write(Encoding.ASCII.GetBytes("FOO"));
         inStream.Position = 0;
 
@@ -68,14 +67,13 @@ public class AesCryptGuardTests
         using var inStream = new MemoryStream();
         using var outStream = new MemoryStream();
 
-        // Write correct magic, wrong version, reserved, and end-of-extensions
         inStream.Write(Encoding.ASCII.GetBytes("AES"));
-        inStream.WriteByte(3); // invalid version (valid is 2)
+        inStream.WriteByte(4); // invalid version (valid are 2 and 3)
         inStream.WriteByte(0); // reserved
         inStream.WriteByte(0); // end of extensions tag hi
         inStream.WriteByte(0); // end of extensions tag lo
-        inStream.Position = 0;
 
+        inStream.Position = 0;
         Assert.Throws<InvalidOperationException>(() => crypter.DecryptStream(inStream, outStream, Password, 16));
     }
 
@@ -87,7 +85,6 @@ public class AesCryptGuardTests
         using var encrypted = new MemoryStream();
         crypter.EncryptStream(inStream, encrypted, Password, 16);
 
-        // Try to decrypt with a wrong password
         encrypted.Position = 0;
         using var outStream = new MemoryStream();
         Assert.Throws<InvalidOperationException>(() => crypter.DecryptStream(encrypted, outStream, "WRONG-PASSWORD", 16));

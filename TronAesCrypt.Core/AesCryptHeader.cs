@@ -1,23 +1,30 @@
 ﻿using System;
 using System.IO;
+using TRONSoft.TronAesCrypt.Core.Extensions;
 
 namespace TRONSoft.TronAesCrypt.Core;
 
 public class AesCryptHeader
 {
     private const string AesHeader = "AES";
-    public const string Version = "0.1.0";
+    public const string Version = "2.0.0";
     public const string AppName = "TronAesCrypt";
 
+    [Obsolete("Writing v2 headers is no longer supported. Use WriteHeader(Stream, int) to write a v3 header instead.", error: true)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public void WriteHeader(Stream stream)
+    {
+        throw new NotSupportedException("Writing AES Crypt v2 headers is no longer supported in this version.");
+    }
+
+    private void WriteHeader(Stream stream, AesCryptVersion version)
     {
         // Write header.
         var buffer = AesHeader.GetUtf8Bytes();
         stream.Write(buffer, 0, buffer.Length);
 
-        // write version (AES Crypt version 2 file format -
-        // see https://www.aescrypt.com/aes_file_format.html)
-        stream.WriteByte(2);
+        // Write version byte
+        stream.WriteByte((byte)version);
 
         // reserved byte (set to zero)
         stream.WriteByte(0);
@@ -25,33 +32,67 @@ public class AesCryptHeader
         WriteExtensions(stream);
     }
 
-    public void ReadHeader(Stream inStream)
+    public void WriteHeader(Stream stream, int kdfIterations)
     {
-        var buffer = new byte[3];
-        _ = inStream.Read(buffer, 0, buffer.Length);
+        WriteHeader(stream, AesCryptVersion.V3);
 
-        if (!buffer.GetUtf8String().Equals(AesHeader))
+        // Write KDF iteration count (4 bytes, network byte order / big-endian)
+        var iterationBytes = BitConverter.GetBytes(kdfIterations);
+        if (BitConverter.IsLittleEndian)
         {
-            throw new InvalidOperationException(Resources.NotAnAescryptFile);
+            Array.Reverse(iterationBytes);
+        }
+        stream.Write(iterationBytes, 0, iterationBytes.Length);
+    }
+
+    public AesCryptVersion PeekAesCryptVersion(Stream inStream)
+    {
+        var originalPosition = inStream.Position;
+        try
+        {
+            ReadAesMarker(inStream);
+            var versionByte = inStream.ReadByte();
+            if (versionByte != 2 && versionByte != 3)
+            {
+                throw new InvalidOperationException(string.Format(Resources.UnsupportedAesCryptVersion, versionByte));
+            }
+            return (AesCryptVersion)versionByte;
+        }
+        finally
+        {
+            inStream.Seek(originalPosition, SeekOrigin.Begin);
+        }
+    }
+
+    public AesCryptVersion ReadHeader(Stream inStream)
+    {
+        ReadAesMarker(inStream);
+
+        // Read version (AES Crypt file format)
+        var versionByte = inStream.ReadByte();
+        if (versionByte != 2 && versionByte != 3)
+        {
+            throw new InvalidOperationException(string.Format(Resources.UnsupportedAesCryptVersion, versionByte));
         }
 
-        // write version (AES Crypt version 2 file format -
-        // see https://www.aescrypt.com/aes_file_format.html)
-        var version = inStream.ReadByte();
-        if (version != 2)
-        {
-            throw new InvalidOperationException(Resources.OnlyAesCryptVersion2IsSupported);
-        }
+        var version = (AesCryptVersion)versionByte;
 
         // Read reserved byte.
         inStream.ReadByte();
 
+        ReadExtensions(inStream);
+
+        return version;
+    }
+
+    private static void ReadExtensions(Stream inStream)
+    {
         // Read the extensions
         while (true)
         {
-            buffer = new byte[2];
-            var bytesRead = inStream.Read(buffer, 0, buffer.Length);
-            if (bytesRead != 2)
+            var buffer = new byte[2];
+            var extensionLengthBytesRead = inStream.Read(buffer, 0, buffer.Length);
+            if (extensionLengthBytesRead != 2)
             {
                 throw new InvalidOperationException(Resources.TheFileIsCorrupt);
             }
@@ -66,9 +107,27 @@ public class AesCryptHeader
                 Array.Reverse(buffer);
             }
 
-            var amountOfBytesToRead = BitConverter.ToInt16(buffer, 0);
+            var amountOfBytesToRead = BitConverter.ToUInt16(buffer, 0);
+            
+            // Add validation for extension length
+            if (amountOfBytesToRead == 0)
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+            
             buffer = new byte[amountOfBytesToRead];
-            inStream.Read(buffer, 0, buffer.Length);
+            
+            // Replace single Read with loop to handle short reads
+            var totalBytesRead = 0;
+            while (totalBytesRead < buffer.Length)
+            {
+                var bytesReadThisIteration = inStream.Read(buffer, totalBytesRead, buffer.Length - totalBytesRead);
+                if (bytesReadThisIteration <= 0)
+                {
+                    throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+                }
+                totalBytesRead += bytesReadThisIteration;
+            }
         }
     }
 
@@ -100,5 +159,22 @@ public class AesCryptHeader
         // write end-of-extensions tag
         outStream.WriteByte(0);
         outStream.WriteByte(0);
+    }
+
+    private static void ReadAesMarker(Stream inStream)
+    {
+        var buffer = new byte[3];
+        try
+        {
+            inStream.ReadExactly(buffer, 0, 3);
+        }
+        catch (EndOfStreamException ex)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt, ex);
+        }
+        if (!buffer.GetUtf8String().Equals(AesHeader))
+        {
+            throw new InvalidOperationException(Resources.NotAnAescryptFile);
+        }
     }
 }

@@ -25,7 +25,7 @@ Follow these fundamental guidelines for all C# development:
 | Classes, Methods, Properties | PascalCase                   | `AesCrypt`, `EncryptFile`, `MaxCount`   |
 | Parameters, Local Variables  | camelCase                    | `bufferSize`, `inputStream`, `password` |
 | Private Fields               | camelCase with `_` prefix    | `_aesCryptHeader`, `_fixture`           |
-| Constants                    | UPPER_SNAKE_CASE             | `AES_BLOCK_SIZE`, `MAX_PASS_LEN`        |
+| Constants                    | PascalCase                   | `MinKdfIterations`, `MaxPassLength`     |
 | Namespaces                   | PascalCase (dot-separated)   | `TRONSoft.TronAesCrypt.Core`            |
 
 ## Code Formatting & Style
