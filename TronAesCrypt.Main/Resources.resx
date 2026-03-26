@@ -3,7 +3,7 @@
   <!-- 
     Microsoft ResX Schema 
     
-    Version 2.0
+    Version 2.0 
     
     The primary goals of this format is to allow a simple XML format 
     that is mostly human readable. The generation and parsing of the 
@@ -118,21 +118,57 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="The_input_file_does_not_exist" xml:space="preserve">
-    <value>{0} does not exist.</value>
+    <value>Error: '{0}' does not exist.</value>
   </data>
   <data name="You_must_specify_either_encrypt_or_decrypt_option" xml:space="preserve">
-    <value>You must specify either -e (encrypt) or -d (decrypt).</value>
-  </data>
-  <data name="You_must_specify_a_password" xml:space="preserve">
-    <value>You must specify a password with -p.</value>
+    <value>Error: specify an operation: -e to encrypt, -d to decrypt, or -g -k &lt;path&gt; to generate a key file.</value>
   </data>
   <data name="You_must_specify_an_input_file" xml:space="preserve">
-    <value>You must specify an input file.</value>
+    <value>Error: no input file specified. Provide a file path or '-' to read from stdin.</value>
   </data>
   <data name="Do_not_mix_f_flag_with_positional_arguments" xml:space="preserve">
-    <value>Do not use both -f and a positional file argument. Use one or the other.</value>
+    <value>Error: use either -f &lt;file&gt; or a positional argument, not both.</value>
   </data>
   <data name="Cannot_auto_determine_output_file" xml:space="preserve">
-    <value>Cannot auto-determine output file for '{0}': file does not have a .aes extension. Specify -o explicitly.</value>
+    <value>Error: cannot auto-determine output name for '{0}' (no .aes extension). Use -o to specify the output path.</value>
+  </data>
+  <data name="Stdin_requires_explicit_output" xml:space="preserve">
+    <value>Error: reading from stdin requires an explicit output path (-o). Use -o - to write to stdout.</value>
+  </data>
+  <data name="Enter_password_prompt" xml:space="preserve">
+    <value>Password: </value>
+  </data>
+  <data name="Key_file_path_required" xml:space="preserve">
+    <value>Error: -g requires -k to specify the key file path.</value>
+  </data>
+  <data name="Key_file_already_exists" xml:space="preserve">
+    <value>Error: key file '{0}' already exists. Delete it first or choose a different path.</value>
+  </data>
+  <data name="Key_file_not_found" xml:space="preserve">
+    <value>Error: key file '{0}' does not exist.</value>
+  </data>
+  <data name="Key_file_is_empty" xml:space="preserve">
+    <value>Error: key file '{0}' is empty.</value>
+  </data>
+  <data name="Key_file_generated" xml:space="preserve">
+    <value>Key file '{0}' created successfully.</value>
+  </data>
+  <data name="Cannot_use_both_password_and_keyfile" xml:space="preserve">
+    <value>Error: -p and -k are mutually exclusive. Use one or the other.</value>
+  </data>
+  <data name="Cannot_use_multiple_operations" xml:space="preserve">
+    <value>Error: Only one operation can be specified at a time. Use --encrypt, --decrypt, or --generate exclusively.</value>
+  </data>
+  <data name="Cannot_use_o_with_multiple_files" xml:space="preserve">
+    <value>Error: -o cannot be used with multiple input files. Output names are auto-generated for each input.</value>
+  </data>
+  <data name="Stdin_using_memory_fallback" xml:space="preserve">
+    <value>Note: Using memory buffering (temp file unavailable).</value>
+  </data>
+  <data name="Cannot_use_multiple_stdin" xml:space="preserve">
+    <value>Error: only one stdin (-) flag is allowed.</value>
+  </data>
+  <data name="Cannot_mix_stdin_with_positional" xml:space="preserve">
+    <value>Error: stdin (-) cannot be mixed with other positional arguments.</value>
   </data>
 </root>
