@@ -1,46 +1,52 @@
-﻿using System;
-using System.IO;
+using System;
+using System.Text;
 using CommandLine;
 using TronAesCrypt.Main;
-using TRONSoft.TronAesCrypt.Core;
 
-const int bufferSize = 64 * 1024;
-
-return Parser.Default
-    .ParseArguments<Options>(args)
-    .MapResult(Run, _ => 1);
-
-int Run(Options options)
+var env = new ConsoleEnvironment(() =>
 {
-    if (!File.Exists(options.File))
+    if (Console.IsInputRedirected)
     {
-        Console.WriteLine(Resources.The_input_file_does_not_exist, options.File);
-        return 1;
+        throw new InvalidOperationException(Resources.Cannot_read_password_interactively);
     }
-
-    var crypt = new AesCrypt();
 
     try
     {
-        if (options.Encrypt)
-        {
-            crypt.EncryptFile(options.File, options.Output, options.Password, bufferSize);
-        }
-        else if (options.Decrypt)
-        {
-            crypt.DecryptFile(options.File, options.Output, options.Password, bufferSize);
-        }
-        else
-        {
-            Console.WriteLine(Resources.You_must_specify_either_encrypt_or_decrypt_option);
-            return 1;
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine(ex.Message);
-        return 1;
-    }
+        Console.Error.Write(Resources.Enter_password_prompt);
 
-    return 0;
-}
+        var pass = new StringBuilder();
+        while (true)
+        {
+            var key = Console.ReadKey(true);
+            if (key.Key == ConsoleKey.Enter)
+            {
+                Console.Error.WriteLine();
+                break;
+            }
+
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (pass.Length > 0)
+                {
+                    pass.Length--;
+                }
+
+                continue;
+            }
+
+            if (!char.IsControl(key.KeyChar))
+            {
+                pass.Append(key.KeyChar);
+            }
+        }
+
+        return pass.ToString();
+    }
+    catch (InvalidOperationException)
+    {
+        throw new InvalidOperationException(Resources.Cannot_read_password_interactively);
+    }
+});
+
+return Parser.Default.ParseArguments<Options>(args)
+    .MapResult(opts => new CryptRunner(env).Run(opts), _ => 1);

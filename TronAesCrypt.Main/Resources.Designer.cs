@@ -77,5 +77,158 @@ namespace TronAesCrypt.Main {
                 return ResourceManager.GetString("You_must_specify_either_encrypt_or_decrypt_option", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You must specify an input file..
+        /// </summary>
+        internal static string You_must_specify_an_input_file {
+            get {
+                return ResourceManager.GetString("You_must_specify_an_input_file", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Do not use both -f and a positional file argument..
+        /// </summary>
+        internal static string Do_not_mix_f_flag_with_positional_arguments {
+            get {
+                return ResourceManager.GetString("Do_not_mix_f_flag_with_positional_arguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot auto-determine output file for '{0}'..
+        /// </summary>
+        internal static string Cannot_auto_determine_output_file {
+            get {
+                return ResourceManager.GetString("Cannot_auto_determine_output_file", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reading from stdin requires an explicit output path (-o)..
+        /// </summary>
+        internal static string Stdin_requires_explicit_output {
+            get {
+                return ResourceManager.GetString("Stdin_requires_explicit_output", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Password: .
+        /// </summary>
+        internal static string Enter_password_prompt {
+            get {
+                return ResourceManager.GetString("Enter_password_prompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error: cannot prompt for password because stdin is not a terminal.
+        /// </summary>
+        internal static string Cannot_read_password_interactively {
+            get {
+                return ResourceManager.GetString("Cannot_read_password_interactively", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The -g flag requires -k to specify the key file path..
+        /// </summary>
+        internal static string Key_file_path_required {
+            get {
+                return ResourceManager.GetString("Key_file_path_required", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Key file '{0}' already exists..
+        /// </summary>
+        internal static string Key_file_already_exists {
+            get {
+                return ResourceManager.GetString("Key_file_already_exists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Key file '{0}' does not exist..
+        /// </summary>
+        internal static string Key_file_not_found {
+            get {
+                return ResourceManager.GetString("Key_file_not_found", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Key file '{0}' is empty..
+        /// </summary>
+        internal static string Key_file_is_empty {
+            get {
+                return ResourceManager.GetString("Key_file_is_empty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Key file '{0}' created successfully..
+        /// </summary>
+        internal static string Key_file_generated {
+            get {
+                return ResourceManager.GetString("Key_file_generated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot use both -p (password) and -k (key file)..
+        /// </summary>
+        internal static string Cannot_use_both_password_and_keyfile {
+            get {
+                return ResourceManager.GetString("Cannot_use_both_password_and_keyfile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot use -o with multiple input files..
+        /// </summary>
+        internal static string Cannot_use_o_with_multiple_files {
+            get {
+                return ResourceManager.GetString("Cannot_use_o_with_multiple_files", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Note: Using memory buffering (temp file unavailable)..
+        /// </summary>
+        internal static string Stdin_using_memory_fallback {
+            get {
+                return ResourceManager.GetString("Stdin_using_memory_fallback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error: Only one operation can be specified at a time. Use --encrypt, --decrypt, or --generate exclusively..
+        /// </summary>
+        internal static string Cannot_use_multiple_operations {
+            get {
+                return ResourceManager.GetString("Cannot_use_multiple_operations", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Error: only one stdin (-) flag is allowed..
+        /// </summary>
+        internal static string Cannot_use_multiple_stdin {
+            get {
+                return ResourceManager.GetString("Cannot_use_multiple_stdin", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Error: stdin (-) cannot be mixed with other positional arguments..
+        /// </summary>
+        internal static string Cannot_mix_stdin_with_positional {
+            get {
+                return ResourceManager.GetString("Cannot_mix_stdin_with_positional", resourceCulture);
+            }
+        }
     }
 }
