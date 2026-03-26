@@ -10,6 +10,7 @@ namespace TronAesCrypt.Main;
 public class CryptRunner(ICryptEnvironment env)
 {
     private const int BufferSize = 64 * 1024;
+    private readonly PasswordResolver _passwordResolver = new(env);
 
     public int Run(Options options)
     {
@@ -32,8 +33,8 @@ public class CryptRunner(ICryptEnvironment env)
         string password;
         try
         {
-            files = ResolveInputFiles(options);
-            password = GetPassword(options);
+            files = options.ResolveInputFiles();
+            password = _passwordResolver.Resolve(options);
         }
         catch (Exception ex)
         {
@@ -50,92 +51,7 @@ public class CryptRunner(ICryptEnvironment env)
         return 1;
     }
 
-    private static void ValidateOptions(Options options)
-    {
-        bool[] cryptoOptionsStatus = [options.Encrypt, options.Decrypt, options.Generate];
-        var operationCount = cryptoOptionsStatus.Count(enabled => enabled);
-        if (operationCount == 0)
-        {
-            throw new ArgumentException(Resources.You_must_specify_either_encrypt_or_decrypt_option);
-        }
-
-        if (operationCount > 1)
-        {
-            throw new ArgumentException(Resources.Cannot_use_multiple_operations);
-        }
-
-        if (!string.IsNullOrEmpty(options.Password) && !string.IsNullOrEmpty(options.KeyFile))
-        {
-            throw new ArgumentException(Resources.Cannot_use_both_password_and_keyfile);
-        }
-
-        if (options.Generate)
-        {
-            ValidateGenerateOptions(options);
-        }
-        else
-        {
-            ValidateCryptOptions(options);
-        }
-    }
-
-    private static void ValidateGenerateOptions(Options options)
-    {
-        if (string.IsNullOrEmpty(options.KeyFile))
-        {
-            throw new ArgumentException(Resources.Key_file_path_required);
-        }
-    }
-
-    private static void ValidateCryptOptions(Options options)
-    {
-
-        if (!string.IsNullOrEmpty(options.LegacyFile) && options.Files.Any())
-        {
-            throw new ArgumentException(Resources.Do_not_mix_f_flag_with_positional_arguments);
-        }
-
-        var files = ResolveFiles(options).ToList();
-        if (files.Count == 0)
-        {
-            throw new ArgumentException(Resources.You_must_specify_an_input_file);
-        }
-
-        var stdinCount = files.Count(file => file == "-");
-        if (stdinCount > 1)
-        {
-            throw new ArgumentException(Resources.Cannot_use_multiple_stdin);
-        }
-
-        if (stdinCount == 1)
-        {
-            if (files.Count > 1)
-            {
-                throw new ArgumentException(Resources.Cannot_mix_stdin_with_positional);
-            }
-
-            if (string.IsNullOrEmpty(options.Output))
-            {
-                throw new ArgumentException(Resources.Stdin_requires_explicit_output);
-            }
-        }
-
-        if (!string.IsNullOrEmpty(options.Output) && options.Output != "-" && files.Count > 1)
-        {
-            throw new ArgumentException(Resources.Cannot_use_o_with_multiple_files);
-        }
-    }
-
-    private static IEnumerable<string> ResolveFiles(Options options)
-    {
-        if (!string.IsNullOrEmpty(options.LegacyFile))
-        {
-            return [options.LegacyFile];
-        }
-        return options.Files;
-    }
-
-    private static IEnumerable<string> ResolveInputFiles(Options options) => ResolveFiles(options);
+    private static void ValidateOptions(Options options) => OptionsValidator.ValidateOrThrow(options);
 
     private int RunGenerate(Options options)
     {
@@ -206,7 +122,7 @@ public class CryptRunner(ICryptEnvironment env)
     {
         var isStdin = inputFile == "-";
         var isStdout = outputPath == "-";
-        var outputFile = outputPath ?? GetDecryptOutputPath(inputFile);
+        var outputFile = outputPath ?? inputFile.GetDecryptOutputPath();
 
         if (!isStdin && !File.Exists(inputFile))
         {
@@ -281,38 +197,6 @@ public class CryptRunner(ICryptEnvironment env)
         stream.CopyTo(buffer);
         buffer.Position = 0;
         return buffer;
-    }
-
-    private static string GetDecryptOutputPath(string inputFile)
-    {
-        if (inputFile.EndsWith(".aes", StringComparison.OrdinalIgnoreCase))
-        {
-            return inputFile[..^4];
-        }
-
-        throw new ArgumentException(string.Format(Resources.Cannot_auto_determine_output_file, inputFile));
-    }
-
-    private string GetPassword(Options options)
-    {
-        if (!string.IsNullOrEmpty(options.Password))
-        {
-            return options.Password;
-        }
-
-        if (!string.IsNullOrEmpty(options.KeyFile))
-        {
-            if (!File.Exists(options.KeyFile))
-            {
-                throw new FileNotFoundException(string.Format(Resources.Key_file_not_found, options.KeyFile));
-            }
-
-            using var stream = env.OpenInput(options.KeyFile, false);
-            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-            return reader.ReadToEnd();
-        }
-
-        return env.ReadPassword();
     }
 
     private void GenerateKeyFile(string path)
