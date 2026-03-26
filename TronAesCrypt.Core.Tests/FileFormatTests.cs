@@ -48,7 +48,7 @@ public class FileFormatTests : IDisposable
     }
 
     [Fact]
-    public void TheHeaderIsCorrectlyWritten()
+    public async Task TheHeaderIsCorrectlyWrittenAsync()
     {
         // Arrange
         var crypter = new AesCrypt();
@@ -58,7 +58,7 @@ public class FileFormatTests : IDisposable
         const int bufferSize = 16;
 
         // Act
-        crypter.EncryptStream(inStream, outStream, password, bufferSize);
+        await crypter.EncryptStreamAsync(inStream, outStream, password, bufferSize);
 
         // Assert
         outStream.Position = 0;
@@ -93,16 +93,16 @@ public class FileFormatTests : IDisposable
     }
 
     [Fact]
-    public void TheHeaderShouldBeReadCorrectly()
+    public async Task TheHeaderShouldBeReadCorrectlyAsync()
     {
         using var inStream = new MemoryStream();
         using var outStream = new MemoryStream();
         var crypter = new AesCrypt();
-        crypter.EncryptStream(inStream, outStream, Password, 64 * 1024);
+        await crypter.EncryptStreamAsync(inStream, outStream, Password, 64 * 1024);
 
         // Act & Assert
         outStream.Position = 0;
-        crypter.DecryptStream(outStream, new MemoryStream(), Password, 64 * 1024);
+        await crypter.DecryptStreamAsync(outStream, new MemoryStream(), Password, 64 * 1024);
     }
 
     [Fact]
@@ -118,8 +118,8 @@ public class FileFormatTests : IDisposable
 
             // Act
             var crypter = new AesCrypt();
-            crypter.EncryptFile(file, encryptedFileName, Password, 64 * 1024);
-            crypter.DecryptFile(encryptedFileName, decryptedFileName, Password, 64 * 1024);
+            await crypter.EncryptFileAsync(file, encryptedFileName, Password, 64 * 1024);
+            await crypter.DecryptFileAsync(encryptedFileName, decryptedFileName, Password, 64 * 1024);
 
             // Assert
             Assert.Equal(fileName.AsSha256OfFile(), decryptedFileName.AsSha256OfFile());

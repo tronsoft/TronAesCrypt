@@ -1,5 +1,7 @@
-﻿using System;
+using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using TRONSoft.TronAesCrypt.Core.Extensions;
 
 namespace TRONSoft.TronAesCrypt.Core;
@@ -64,6 +66,27 @@ public class AesCryptHeader
         }
     }
 
+    public async Task<AesCryptVersion> PeekAesCryptVersionAsync(Stream inStream, CancellationToken cancellationToken = default)
+    {
+        var originalPosition = inStream.Position;
+        try
+        {
+            await ReadAesMarkerAsync(inStream, cancellationToken).ConfigureAwait(false);
+            var buffer = new byte[1];
+            await inStream.ReadExactlyAsync(buffer.AsMemory(0, 1), cancellationToken).ConfigureAwait(false);
+            var versionByte = buffer[0];
+            if (versionByte != 2 && versionByte != 3)
+            {
+                throw new InvalidOperationException(string.Format(Resources.UnsupportedAesCryptVersion, versionByte));
+            }
+            return (AesCryptVersion)versionByte;
+        }
+        finally
+        {
+            inStream.Seek(originalPosition, SeekOrigin.Begin);
+        }
+    }
+
     public AesCryptVersion ReadHeader(Stream inStream)
     {
         ReadAesMarker(inStream);
@@ -81,6 +104,29 @@ public class AesCryptHeader
         inStream.ReadByte();
 
         ReadExtensions(inStream);
+
+        return version;
+    }
+
+    public async Task<AesCryptVersion> ReadHeaderAsync(Stream inStream, CancellationToken cancellationToken = default)
+    {
+        await ReadAesMarkerAsync(inStream, cancellationToken).ConfigureAwait(false);
+
+        // Read version (AES Crypt file format)
+        var buffer = new byte[1];
+        await inStream.ReadExactlyAsync(buffer.AsMemory(0, 1), cancellationToken).ConfigureAwait(false);
+        var versionByte = buffer[0];
+        if (versionByte != 2 && versionByte != 3)
+        {
+            throw new InvalidOperationException(string.Format(Resources.UnsupportedAesCryptVersion, versionByte));
+        }
+
+        var version = (AesCryptVersion)versionByte;
+
+        // Read reserved byte.
+        await inStream.ReadExactlyAsync(buffer.AsMemory(0, 1), cancellationToken).ConfigureAwait(false);
+
+        await ReadExtensionsAsync(inStream, cancellationToken).ConfigureAwait(false);
 
         return version;
     }
@@ -131,6 +177,55 @@ public class AesCryptHeader
         }
     }
 
+    private static async Task ReadExtensionsAsync(Stream inStream, CancellationToken cancellationToken)
+    {
+        // Read the extensions
+        while (true)
+        {
+            var buffer = new byte[2];
+            try
+            {
+                await inStream.ReadExactlyAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
+            }
+            catch (EndOfStreamException ex)
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt, ex);
+            }
+
+            if (buffer[0] == 0 && buffer[1] == 0)
+            {
+                break;
+            }
+
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(buffer);
+            }
+
+            var amountOfBytesToRead = BitConverter.ToUInt16(buffer, 0);
+            
+            // Add validation for extension length
+            if (amountOfBytesToRead == 0)
+            {
+                throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+            }
+            
+            buffer = new byte[amountOfBytesToRead];
+            
+            // Replace single Read with loop to handle short reads
+            var totalBytesRead = 0;
+            while (totalBytesRead < buffer.Length)
+            {
+                var bytesReadThisIteration = await inStream.ReadAsync(buffer.AsMemory(totalBytesRead, buffer.Length - totalBytesRead), cancellationToken).ConfigureAwait(false);
+                if (bytesReadThisIteration <= 0)
+                {
+                    throw new InvalidOperationException(Resources.TheFileIsCorrupt);
+                }
+                totalBytesRead += bytesReadThisIteration;
+            }
+        }
+    }
+
     private void WriteExtensions(Stream outStream)
     {
         // Created-by extensions
@@ -167,6 +262,23 @@ public class AesCryptHeader
         try
         {
             inStream.ReadExactly(buffer, 0, 3);
+        }
+        catch (EndOfStreamException ex)
+        {
+            throw new InvalidOperationException(Resources.TheFileIsCorrupt, ex);
+        }
+        if (!buffer.GetUtf8String().Equals(AesHeader))
+        {
+            throw new InvalidOperationException(Resources.NotAnAescryptFile);
+        }
+    }
+
+    private static async Task ReadAesMarkerAsync(Stream inStream, CancellationToken cancellationToken)
+    {
+        var buffer = new byte[3];
+        try
+        {
+            await inStream.ReadExactlyAsync(buffer.AsMemory(0, 3), cancellationToken).ConfigureAwait(false);
         }
         catch (EndOfStreamException ex)
         {

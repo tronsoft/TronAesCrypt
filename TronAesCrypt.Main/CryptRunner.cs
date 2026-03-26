@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using TRONSoft.TronAesCrypt.Core;
 
 namespace TronAesCrypt.Main;
@@ -12,7 +13,7 @@ public class CryptRunner(ICryptEnvironment env)
     private const int BufferSize = 64 * 1024;
     private readonly PasswordResolver _passwordResolver = new(env);
 
-    public int Run(Options options)
+    public async Task<int> RunAsync(Options options)
     {
         try
         {
@@ -26,7 +27,7 @@ public class CryptRunner(ICryptEnvironment env)
 
         if (options.Generate)
         {
-            return RunGenerate(options);
+            return await RunGenerateAsync(options);
         }
 
         IEnumerable<string> files;
@@ -44,7 +45,7 @@ public class CryptRunner(ICryptEnvironment env)
 
         if (options.Encrypt || options.Decrypt)
         {
-            return RunCrypt(options, files, password);
+            return await RunCryptAsync(options, files, password);
         }
 
         env.WriteError(Resources.You_must_specify_either_encrypt_or_decrypt_option);
@@ -53,7 +54,7 @@ public class CryptRunner(ICryptEnvironment env)
 
     private static void ValidateOptions(Options options) => OptionsValidator.ValidateOrThrow(options);
 
-    private int RunGenerate(Options options)
+    private async Task<int> RunGenerateAsync(Options options)
     {
         if (File.Exists(options.KeyFile))
         {
@@ -63,7 +64,7 @@ public class CryptRunner(ICryptEnvironment env)
 
         try
         {
-            GenerateKeyFile(options.KeyFile!);
+            await GenerateKeyFileAsync(options.KeyFile!);
             env.WriteInfo(string.Format(Resources.Key_file_generated, options.KeyFile));
             return 0;
         }
@@ -74,7 +75,7 @@ public class CryptRunner(ICryptEnvironment env)
         }
     }
 
-    private int RunCrypt(Options options, IEnumerable<string> files, string password)
+    private async Task<int> RunCryptAsync(Options options, IEnumerable<string> files, string password)
     {
         var fileList = files.ToList();
         var anyFailed = false;
@@ -85,11 +86,11 @@ public class CryptRunner(ICryptEnvironment env)
             {
                 if (options.Encrypt)
                 {
-                    EncryptFile(inputFile, options.Output, password);
+                    await EncryptFileAsync(inputFile, options.Output, password);
                 }
                 else
                 {
-                    DecryptFile(inputFile, options.Output, password);
+                    await DecryptFileAsync(inputFile, options.Output, password);
                 }
             }
             catch (Exception ex)
@@ -102,7 +103,7 @@ public class CryptRunner(ICryptEnvironment env)
         return anyFailed ? 1 : 0;
     }
 
-    private void EncryptFile(string inputFile, string? outputPath, string password)
+    private async Task EncryptFileAsync(string inputFile, string? outputPath, string password)
     {
         var isStdin = inputFile == "-";
         var isStdout = outputPath == "-";
@@ -115,10 +116,10 @@ public class CryptRunner(ICryptEnvironment env)
 
         using var inStream = env.OpenInput(inputFile, isStdin);
         using var outStream = env.OpenOutput(outputFile, isStdout);
-        new AesCrypt().EncryptStream(inStream, outStream, password, BufferSize);
+        await new AesCrypt().EncryptStreamAsync(inStream, outStream, password, BufferSize);
     }
 
-    private void DecryptFile(string inputFile, string? outputPath, string password)
+    private async Task DecryptFileAsync(string inputFile, string? outputPath, string password)
     {
         var isStdin = inputFile == "-";
         var isStdout = outputPath == "-";
@@ -131,7 +132,7 @@ public class CryptRunner(ICryptEnvironment env)
 
         if (isStdin)
         {
-            DecryptFromStdin(outputFile, isStdout, password);
+            await DecryptFromStdinAsync(outputFile, isStdout, password);
             return;
         }
 
@@ -140,15 +141,15 @@ public class CryptRunner(ICryptEnvironment env)
 
         if (inStream.CanSeek)
         {
-            new AesCrypt().DecryptStream(inStream, outStream, password, BufferSize);
+            await new AesCrypt().DecryptStreamAsync(inStream, outStream, password, BufferSize);
             return;
         }
 
-        using var seekableInput = EnsureSeekable(inStream);
-        new AesCrypt().DecryptStream(seekableInput, outStream, password, BufferSize);
+        using var seekableInput = await EnsureSeekableAsync(inStream);
+        await new AesCrypt().DecryptStreamAsync(seekableInput, outStream, password, BufferSize);
     }
 
-    private void DecryptFromStdin(string outputFile, bool isStdout, string password)
+    private async Task DecryptFromStdinAsync(string outputFile, bool isStdout, string password)
     {
         string? tempFile = null;
         try
@@ -161,21 +162,21 @@ public class CryptRunner(ICryptEnvironment env)
 
                 using var tempStream = new FileStream(tempFile, FileMode.Create, FileAccess.Write);
                 using var stdin = env.OpenInput("-", true);
-                stdin.CopyTo(tempStream);
+                await stdin.CopyToAsync(tempStream);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
             {
                 env.WriteInfo(Resources.Stdin_using_memory_fallback);
                 using var stdin = env.OpenInput("-", true);
-                using var bufferedStream = EnsureSeekable(stdin);
+                using var bufferedStream = await EnsureSeekableAsync(stdin);
                 using var fallbackOutStream = env.OpenOutput(outputFile, isStdout);
-                new AesCrypt().DecryptStream(bufferedStream, fallbackOutStream, password, BufferSize);
+                await new AesCrypt().DecryptStreamAsync(bufferedStream, fallbackOutStream, password, BufferSize);
                 return;
             }
 
             using var inStream = env.OpenInput(tempFile, false);
             using var finalOutStream = env.OpenOutput(outputFile, isStdout);
-            new AesCrypt().DecryptStream(inStream, finalOutStream, password, BufferSize);
+            await new AesCrypt().DecryptStreamAsync(inStream, finalOutStream, password, BufferSize);
         }
         finally
         {
@@ -186,7 +187,7 @@ public class CryptRunner(ICryptEnvironment env)
         }
     }
 
-    private static Stream EnsureSeekable(Stream stream)
+    private static async Task<Stream> EnsureSeekableAsync(Stream stream)
     {
         if (stream.CanSeek)
         {
@@ -194,15 +195,15 @@ public class CryptRunner(ICryptEnvironment env)
         }
 
         var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
+        await stream.CopyToAsync(buffer);
         buffer.Position = 0;
         return buffer;
     }
 
-    private void GenerateKeyFile(string path)
+    private async Task GenerateKeyFileAsync(string path)
     {
         using var stream = env.OpenOutput(path, false);
-        using var writer = new StreamWriter(stream, new System.Text.UnicodeEncoding(false, true));
+        await using var writer = new StreamWriter(stream, new System.Text.UnicodeEncoding(false, true));
 
         const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
         var key = new char[64];
@@ -210,6 +211,6 @@ public class CryptRunner(ICryptEnvironment env)
         {
             key[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
         }
-        writer.Write(key);
+        await writer.WriteAsync(key);
     }
 }
