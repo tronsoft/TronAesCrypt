@@ -5,19 +5,29 @@ using TronAesCrypt.Main;
 
 var env = new ConsoleEnvironment(() =>
 {
-    var pass = new StringBuilder();
-    while (true)
+    Console.Error.Write(Resources.Enter_password_prompt);
+
+    try
     {
-        var key = Console.ReadKey(true);
-        if (key.Key == ConsoleKey.Enter)
+        var pass = new StringBuilder();
+        while (true)
         {
-            break;
+            var key = Console.ReadKey(true);
+            if (key.Key == ConsoleKey.Enter)
+            {
+                Console.Error.WriteLine();
+                break;
+            }
+
+            pass.Append(key.KeyChar);
         }
 
-        pass.Append(key.KeyChar);
+        return pass.ToString();
     }
-
-    return pass.ToString();
+    catch (InvalidOperationException)
+    {
+        throw new InvalidOperationException(Resources.Cannot_read_password_interactively);
+    }
 });
 
 return Parser.Default.ParseArguments<Options>(args)

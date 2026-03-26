@@ -138,6 +138,9 @@
   <data name="Enter_password_prompt" xml:space="preserve">
     <value>Password: </value>
   </data>
+  <data name="Cannot_read_password_interactively" xml:space="preserve">
+    <value>Error: cannot prompt for password because stdin is not a terminal. Use -p &lt;password&gt; or -k &lt;keyfile&gt; to provide the password non-interactively.</value>
+  </data>
   <data name="Key_file_path_required" xml:space="preserve">
     <value>Error: -g requires -k to specify the key file path.</value>
   </data>

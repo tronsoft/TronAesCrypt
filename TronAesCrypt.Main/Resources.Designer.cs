@@ -124,6 +124,15 @@ namespace TronAesCrypt.Main {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Error: cannot prompt for password because stdin is not a terminal.
+        /// </summary>
+        internal static string Cannot_read_password_interactively {
+            get {
+                return ResourceManager.GetString("Cannot_read_password_interactively", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The -g flag requires -k to specify the key file path..
         /// </summary>
         internal static string Key_file_path_required {

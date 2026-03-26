@@ -4,18 +4,17 @@ using CommandLine.Text;
 
 namespace TronAesCrypt.Main;
 
-[Verb("aescrypt", isDefault: true, HelpText = "AES-256 file encryption and decryption.")]
 public class Options
 {
     [Usage(ApplicationAlias = "AesCrypt")]
     public static IEnumerable<Example> Examples =>
     [
-        new("Encrypt a file",        new Options { Encrypt = true, Files = ["photo.jpg"],          Password = "secret" }),
-        new("Decrypt a file",        new Options { Decrypt = true, Files = ["photo.jpg.aes"],      Password = "secret" }),
-        new("Encrypt multiple files",new Options { Encrypt = true, Files = ["a.txt", "b.txt"],     Password = "secret" }),
-        new("Generate a key file",   new Options { Generate = true, KeyFile = "secret.key" }),
-        new("Encrypt with key file", new Options { Encrypt = true, Files = ["photo.jpg"],          KeyFile = "secret.key" }),
-        new("Encrypt stdin to stdout", new Options { Encrypt = true, Files = ["-"], Output = "-",  Password = "secret" }),
+        new("Encrypt a file",          new Options { Encrypt = true, Files = ["photo.jpg"],          Password = "secret" }),
+        new("Decrypt a file",          new Options { Decrypt = true, Files = ["photo.jpg.aes"],      Password = "secret" }),
+        new("Encrypt multiple files",  new Options { Encrypt = true, Files = ["a.txt", "b.txt"],     Password = "secret" }),
+        new("Generate a key file",     new Options { Generate = true, KeyFile = "secret.key" }),
+        new("Encrypt with key file",   new Options { Encrypt = true, Files = ["photo.jpg"],          KeyFile = "secret.key" }),
+        new("Encrypt stdin to stdout", new Options { Encrypt = true, Files = ["-"], Output = "-",    Password = "secret" }),
     ];
 
     [Option('e', "encrypt", HelpText = "Encrypt the specified file(s). Mutually exclusive with -d and -g.")]
