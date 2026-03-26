@@ -5,10 +5,15 @@ using TronAesCrypt.Main;
 
 var env = new ConsoleEnvironment(() =>
 {
-    Console.Error.Write(Resources.Enter_password_prompt);
+    if (Console.IsInputRedirected)
+    {
+        throw new InvalidOperationException(Resources.Cannot_read_password_interactively);
+    }
 
     try
     {
+        Console.Error.Write(Resources.Enter_password_prompt);
+
         var pass = new StringBuilder();
         while (true)
         {
