@@ -212,5 +212,23 @@ namespace TronAesCrypt.Main {
                 return ResourceManager.GetString("Cannot_use_multiple_operations", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Error: only one stdin (-) flag is allowed..
+        /// </summary>
+        internal static string Cannot_use_multiple_stdin {
+            get {
+                return ResourceManager.GetString("Cannot_use_multiple_stdin", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Error: stdin (-) cannot be mixed with other positional arguments..
+        /// </summary>
+        internal static string Cannot_mix_stdin_with_positional {
+            get {
+                return ResourceManager.GetString("Cannot_mix_stdin_with_positional", resourceCulture);
+            }
+        }
     }
 }

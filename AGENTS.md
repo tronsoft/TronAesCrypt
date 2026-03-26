@@ -31,6 +31,7 @@ This implementation follows [AES Crypt v3](https://www.aescrypt.com/aes_file_for
 Refer to [`csharp-coding-standards.instructions.md`][csharp-standards] and [`clean-code.instructions.md`][clean-code] for comprehensive C# 14 conventions and design principles.
 
 **Key Conventions:**
+
 - **Namespaces**: File-scoped namespace declarations (C# 10+)
 - **Naming**: PascalCase for classes/methods, camelCase for locals, `_` prefix for private fields
 - **Braces**: Always required, even for single-statement blocks
@@ -60,22 +61,22 @@ dotnet build -c Release
 dotnet test -c Release
 
 # Encrypt file (auto-names to file.txt.aes)
-AesCrypt.exe file.txt
+AesCrypt.exe -e file.txt
 
 # Decrypt file (auto-removes .aes extension)
 AesCrypt.exe -d file.txt.aes
 
 # Encrypt with explicit output
-AesCrypt.exe file.txt -o encrypted.dat
+AesCrypt.exe -e file.txt -o encrypted.dat
 
 # Use a key file instead of password
-AesCrypt.exe file.txt -k secret.key
+AesCrypt.exe -e file.txt -k secret.key
 
 # Generate a random key file
 AesCrypt.exe -g -k secret.key
 
 # Standard Input/Output (piping)
-cat plain.txt | AesCrypt.exe - -o - > encrypted.aes
+cat plain.txt | AesCrypt.exe -e - -o - > encrypted.aes
 
 # Pack NuGet (auto-generates on build)
 dotnet pack -c Release TronAesCrypt.Core/TronAesCrypt.Core.csproj

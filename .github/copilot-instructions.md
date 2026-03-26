@@ -31,13 +31,13 @@ This implementation defaults to **AES Crypt Stream Format v3**.
 2.  **Extensions**: Flexible metadata (CREATED_BY, etc.).
 3.  **Iteration Count**: 4-byte big-endian integer (default: 300,000).
 4.  **Key Derivation**: PBKDF2-HMAC-SHA512.
-    -   Salt: 16-byte random IV.
-    -   Iterations: Configurable (min 10,000).
+    - Salt: 16-byte random IV.
+    - Iterations: Configurable (min 10,000).
 5.  **Encryption**: AES-256 CBC Mode.
 6.  **Padding**: Standard **PKCS#7** (unlike v2's custom modulo padding).
 7.  **HMAC**:
-    -   HMAC-SHA256(encrypted_keys || 0x03) for header integrity.
-    -   HMAC-SHA256(ciphertext) for data integrity.
+    - HMAC-SHA256(encrypted_keys || 0x03) for header integrity.
+    - HMAC-SHA256(ciphertext) for data integrity.
 
 > **Backward Compatibility**: The library can fully decrypt v2 files (SHA-256 stretching, modulo padding), but only writes v3 files by default.
 
@@ -46,29 +46,31 @@ This implementation defaults to **AES Crypt Stream Format v3**.
 The CLI supports positional arguments, piping, and key files.
 
 ### Syntax
+
 ```bash
 AesCrypt.exe [files...] [-o output] [-p password | -k keyfile] [options]
 ```
 
 ### Examples
+
 ```bash
 # Encrypt file (auto-names to file.txt.aes)
-AesCrypt.exe file.txt
+AesCrypt.exe -e file.txt
 
 # Decrypt file (auto-removes .aes extension)
 AesCrypt.exe -d file.txt.aes
 
 # Encrypt with explicit output
-AesCrypt.exe file.txt -o encrypted.dat
+AesCrypt.exe -e file.txt -o encrypted.dat
 
 # Use a key file instead of password
-AesCrypt.exe file.txt -k secret.key
+AesCrypt.exe -e file.txt -k secret.key
 
 # Generate a random key file
 AesCrypt.exe -g -k secret.key
 
 # Standard Input/Output (piping)
-cat plain.txt | AesCrypt.exe - -o - > encrypted.aes
+cat plain.txt | AesCrypt.exe -e - -o - > encrypted.aes
 ```
 
 ## Build & Test Commands
@@ -91,6 +93,7 @@ dotnet pack -c Release TronAesCrypt.Core/TronAesCrypt.Core.csproj
 ## Project-Specific Conventions
 
 ### Coding Standards
+
 Refer to [C# Coding Standards](instructions/csharp-coding-standards.instructions.md) for general rules. Specific additions:
 
 - **`InternalsVisibleTo`**: Used to expose internal logic (like `CryptRunner`) to test projects.
@@ -98,10 +101,12 @@ Refer to [C# Coding Standards](instructions/csharp-coding-standards.instructions
 - **Pattern Matching**: Prefer modern C# pattern matching (e.g., `is`, `switch`) for type checks and conditions.
 
 ### Resource Management
+
 - **Resources.resx**: Stores all user-facing strings/errors.
 - **Linux Dev Note**: `ResXFileCodeGenerator` is Windows-only. When modifying `.resx` on Linux, you **MUST** manually update `Resources.Designer.cs` to match.
 
 ### Namespace Structure
+
 - Root: `TRONSoft.TronAesCrypt.Core`
 - Tests: `TRONSoft.TronAesCrypt.Core.Tests`
 - Main: `TronAesCrypt.Main`
@@ -109,19 +114,22 @@ Refer to [C# Coding Standards](instructions/csharp-coding-standards.instructions
 ## Testing Patterns
 
 ### Integration Testing (`AesCryptCommandLineTests.cs`)
+
 Tests run the full CLI logic via `CryptRunner` or spawned processes (`AesCryptProcessRunner`), covering:
+
 - Argument parsing
 - Stdin/Stdout piping (`NonDisposingStream` wrappers)
 - Key file generation/usage
 - Interactive password prompts (via `Func<string>` injection)
 
 ### Core Logic (`FileFormatTests.cs`)
+
 Uses `AesCrypt` class directly to test round-trip encryption/decryption with various file sizes to ensure padding handles edge cases (empty, 1 block, 1 byte off, etc.).
 
 ## NuGet Package Publishing
 
 - **Automatic Packing**: `<GeneratePackageOnBuild>true` in `.csproj`.
 - **Versioning**:
-    1. Update `<PackageVersion>` in `TronAesCrypt.Core.csproj`.
-    2. Update `AesCryptHeader.Version` if file format changes.
-    3. Build Release config.
+  1. Update `<PackageVersion>` in `TronAesCrypt.Core.csproj`.
+  2. Update `AesCryptHeader.Version` if file format changes.
+  3. Build Release config.

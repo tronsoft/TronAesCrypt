@@ -27,7 +27,7 @@ public class ConsoleEnvironment(Func<string> readPassword) : ICryptEnvironment
 
     public string ReadPassword() => readPassword();
 
-    public void WriteError(string message) => Console.WriteLine(message);
+    public void WriteError(string message) => Console.Error.WriteLine(message);
 
     public void WriteInfo(string message) => Console.WriteLine(message);
 }

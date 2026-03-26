@@ -12,10 +12,6 @@ public class AesCryptCommandLineTests
 {
     private readonly Fixture _fixture = new();
 
-    // ──────────────────────────────────────────────────────────────
-    // Legacy syntax: -e -f <file> -o <output> -p <password>
-    // ──────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task LegacySyntax_FileIsEncryptedSuccessfully()
     {
@@ -40,9 +36,6 @@ public class AesCryptCommandLineTests
         Assert.True(AesCryptProcessRunner.CanDecrypt(encryptedFile, decryptedFile, password));
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // New positional syntax: -e -p <password> -o <output> <file>
-    // ──────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task PositionalSyntax_FileIsEncryptedSuccessfully()
@@ -94,14 +87,11 @@ public class AesCryptCommandLineTests
         Assert.Equal(await File.ReadAllTextAsync(legacyDecrypted), await File.ReadAllTextAsync(positionalDecrypted));
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Phase 2: Auto-generated output filenames
-    // ──────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task AutoOutput_Encrypt_AppendsAesExtension()
     {
-        var input = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}.txt");
+        var input = CreateTempPath(".txt");
         var expectedOutput = input + ".aes";
         await CreateTextFile(input, _fixture.Create<string>());
 
@@ -121,7 +111,7 @@ public class AesCryptCommandLineTests
     [Fact]
     public async Task AutoOutput_Decrypt_RemovesAesExtension()
     {
-        var baseName = Path.Combine(Path.GetTempPath(), _fixture.Create<string>());
+        var baseName = CreateTempPath();
         var plainInput = baseName + ".txt";
         var encrypted = baseName + ".txt.aes";
         var expectedDecrypted = baseName + ".txt";
@@ -153,9 +143,6 @@ public class AesCryptCommandLineTests
         Assert.NotEqual(0, exitCode);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Phase 2: Interactive password prompt (injected via Func<string>)
-    // ──────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task InteractivePrompt_UsedWhenNoPFlagSupplied()
@@ -196,9 +183,6 @@ public class AesCryptCommandLineTests
         Assert.NotEqual(0, decryptExit);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Error cases
-    // ──────────────────────────────────────────────────────────────
 
     [Fact]
     public void Error_NoOperationFlag_ReturnsNonZero()
@@ -251,9 +235,6 @@ public class AesCryptCommandLineTests
         Assert.NotEqual(0, exitCode);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Phase 3: stdin/stdout piping (tested via stream injection)
-    // ──────────────────────────────────────────────────────────────
 
     [Fact]
     public void Piping_EncryptFromStdin_ToStdout_RoundTrips()
@@ -344,20 +325,56 @@ public class AesCryptCommandLineTests
     [Fact]
     public void Piping_StdinWithoutExplicitOutput_ReturnsNonZero()
     {
-        var exitCode = AesCryptProcessRunner.RunWithPasswordReader(
+        var plaintext = "missing output"u8.ToArray();
+
+        var exitCode = AesCryptProcessRunner.RunWithStreams(
             ["-e", "-p", "pass", "-"],
-            () => "pass");
+            new MemoryStream(plaintext),
+            outputOverride: null);
+
         Assert.NotEqual(0, exitCode);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Phase 4: Key file generation and usage (-g -k / -k)
-    // ──────────────────────────────────────────────────────────────
+    [Fact]
+    public void Piping_MultipleStdinArguments_ReturnsNonZero()
+    {
+        var plaintext = "multiple stdin"u8.ToArray();
+
+        var exitCode = AesCryptProcessRunner.RunWithStreams(
+            ["-e", "-p", "pass", "-o", "-", "-", "-"],
+            new MemoryStream(plaintext),
+            new MemoryStream());
+
+        Assert.NotEqual(0, exitCode);
+    }
+
+    [Fact]
+    public async Task Piping_StdinMixedWithPositionalFile_ReturnsNonZero()
+    {
+        var file = Path.GetTempFileName();
+        await CreateTextFile(file, _fixture.Create<string>());
+
+        try
+        {
+            var plaintext = "mixed stdin"u8.ToArray();
+            var exitCode = AesCryptProcessRunner.RunWithStreams(
+                ["-e", "-p", "pass", "-o", "-", "-", file],
+                new MemoryStream(plaintext),
+                new MemoryStream());
+
+            Assert.NotEqual(0, exitCode);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
 
     [Fact]
     public void KeyFile_Generate_CreatesUtf16LeFileWithMinLength()
     {
-        var keyFile = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}.key");
+        var keyFile = CreateTempPath(".key");
 
         try
         {
@@ -406,7 +423,7 @@ public class AesCryptCommandLineTests
     [Fact]
     public async Task KeyFile_EncryptDecrypt_RoundTrip()
     {
-        var keyFile = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}.key");
+        var keyFile = CreateTempPath(".key");
         var input = Path.GetTempFileName();
         var encrypted = Path.GetTempFileName();
         var decrypted = Path.GetTempFileName();
@@ -433,7 +450,7 @@ public class AesCryptCommandLineTests
     [Fact]
     public async Task KeyFile_Usage_BothPasswordAndKeyFile_ReturnsNonZero()
     {
-        var keyFile = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}.key");
+        var keyFile = CreateTempPath(".key");
         var input = Path.GetTempFileName();
         await CreateTextFile(input, _fixture.Create<string>());
 
@@ -467,9 +484,6 @@ public class AesCryptCommandLineTests
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Phase 5: Multiple file support
-    // ──────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task MultiFile_EncryptDecrypt_AllFilesProcessed()
@@ -528,7 +542,7 @@ public class AesCryptCommandLineTests
         var password = _fixture.Create<string>();
         var goodFile = Path.GetTempFileName();
         var goodEncrypted = goodFile + ".aes";
-        var missingFile = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}_missing.txt");
+        var missingFile = CreateTempPath("_missing.txt");
 
         await CreateTextFile(goodFile, _fixture.Create<string>());
 
@@ -566,9 +580,6 @@ public class AesCryptCommandLineTests
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Phase 6: Integration & backward compatibility validation
-    // ──────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Integration_LegacySyntax_AllFlagsExplicit_StillWorks()
@@ -597,7 +608,7 @@ public class AesCryptCommandLineTests
     [Fact]
     public async Task Integration_MultipleFiles_WithKeyFile_AutoOutput()
     {
-        var keyFile = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}.key");
+        var keyFile = CreateTempPath(".key");
         var files = new[]
         {
             Path.GetTempFileName(),
@@ -648,7 +659,7 @@ public class AesCryptCommandLineTests
     [Fact]
     public void Integration_StdinToStdout_WithKeyFile_RoundTrips()
     {
-        var keyFile = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}.key");
+        var keyFile = CreateTempPath(".key");
         var plaintext = "stdin+keyfile integration test"u8.ToArray();
 
         try
@@ -705,7 +716,7 @@ public class AesCryptCommandLineTests
     [Fact]
     public async Task Integration_PositionalArgs_AutoOutput_InteractivePrompt_Combined()
     {
-        var input = Path.Combine(Path.GetTempPath(), $"{_fixture.Create<string>()}.txt");
+        var input = CreateTempPath(".txt");
         var expectedEncrypted = input + ".aes";
         var password = _fixture.Create<string>();
         var content = _fixture.Create<string>();
@@ -735,5 +746,10 @@ public class AesCryptCommandLineTests
     {
         await using var sw = File.CreateText(path);
         await sw.WriteLineAsync(content);
+    }
+
+    private static string CreateTempPath(string suffix = "")
+    {
+        return Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}{suffix}");
     }
 }

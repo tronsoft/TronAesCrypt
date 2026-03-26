@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using TronAesCrypt.Main;
-using TronAesCrypt.Main.Tests;
+
+namespace TronAesCrypt.Main.Tests;
 
 /// <summary>
 /// Invokes the AesCrypt program entry point in-process for testing.

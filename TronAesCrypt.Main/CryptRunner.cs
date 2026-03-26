@@ -83,13 +83,32 @@ public class CryptRunner(ICryptEnvironment env)
             throw new ArgumentException(Resources.Do_not_mix_f_flag_with_positional_arguments);
         }
 
-        var files = ResolveFiles(options);
-        if (!files.Any())
+        var files = ResolveFiles(options).ToList();
+        if (files.Count == 0)
         {
             throw new ArgumentException(Resources.You_must_specify_an_input_file);
         }
 
-        if (!string.IsNullOrEmpty(options.Output) && options.Output != "-" && files.Count() > 1)
+        var stdinCount = files.Count(file => file == "-");
+        if (stdinCount > 1)
+        {
+            throw new ArgumentException(Resources.Cannot_use_multiple_stdin);
+        }
+
+        if (stdinCount == 1)
+        {
+            if (files.Count > 1)
+            {
+                throw new ArgumentException(Resources.Cannot_mix_stdin_with_positional);
+            }
+
+            if (string.IsNullOrEmpty(options.Output))
+            {
+                throw new ArgumentException(Resources.Stdin_requires_explicit_output);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(options.Output) && options.Output != "-" && files.Count > 1)
         {
             throw new ArgumentException(Resources.Cannot_use_o_with_multiple_files);
         }
@@ -189,9 +208,16 @@ public class CryptRunner(ICryptEnvironment env)
         }
 
         using var inStream = _env.OpenInput(inputFile, false);
-        using var inStreamSeekable = EnsureSeekable(inStream);
         using var outStream = _env.OpenOutput(outputFile, isStdout);
-        new AesCrypt().DecryptStream(inStreamSeekable, outStream, password, BufferSize);
+
+        if (inStream.CanSeek)
+        {
+            new AesCrypt().DecryptStream(inStream, outStream, password, BufferSize);
+            return;
+        }
+
+        using var seekableInput = EnsureSeekable(inStream);
+        new AesCrypt().DecryptStream(seekableInput, outStream, password, BufferSize);
     }
 
     private void DecryptFromStdin(string outputFile, bool isStdout, string password)
@@ -199,13 +225,15 @@ public class CryptRunner(ICryptEnvironment env)
         string? tempFile = null;
         try
         {
-            FileStream? tempStream = null;
             try
             {
                 tempFile = Path.Combine(
                     Path.GetTempPath(),
                     $"TronAesCrypt_stdin_{Guid.NewGuid():N}.aes.tmp");
-                tempStream = new FileStream(tempFile, FileMode.Create, FileAccess.Write);
+
+                using var tempStream = new FileStream(tempFile, FileMode.Create, FileAccess.Write);
+                using var stdin = _env.OpenInput("-", true);
+                stdin.CopyTo(tempStream);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
             {
@@ -215,12 +243,6 @@ public class CryptRunner(ICryptEnvironment env)
                 using var fallbackOutStream = _env.OpenOutput(outputFile, isStdout);
                 new AesCrypt().DecryptStream(bufferedStream, fallbackOutStream, password, BufferSize);
                 return;
-            }
-
-            using (var stdin = _env.OpenInput("-", true))
-            using (tempStream)
-            {
-                stdin.CopyTo(tempStream);
             }
 
             using var inStream = _env.OpenInput(tempFile, false);

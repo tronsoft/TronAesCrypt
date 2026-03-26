@@ -24,7 +24,20 @@ var env = new ConsoleEnvironment(() =>
                 break;
             }
 
-            pass.Append(key.KeyChar);
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (pass.Length > 0)
+                {
+                    pass.Length--;
+                }
+
+                continue;
+            }
+
+            if (!char.IsControl(key.KeyChar))
+            {
+                pass.Append(key.KeyChar);
+            }
         }
 
         return pass.ToString();
