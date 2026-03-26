@@ -9,7 +9,6 @@ namespace TronAesCrypt.Main;
 
 public class CryptRunner(ICryptEnvironment env)
 {
-    private readonly ICryptEnvironment _env = env;
     private const int BufferSize = 64 * 1024;
 
     public int Run(Options options)
@@ -20,7 +19,7 @@ public class CryptRunner(ICryptEnvironment env)
         }
         catch (ArgumentException ex)
         {
-            _env.WriteError(ex.Message);
+            env.WriteError(ex.Message);
             return 1;
         }
 
@@ -38,7 +37,7 @@ public class CryptRunner(ICryptEnvironment env)
         }
         catch (Exception ex)
         {
-            _env.WriteError(ex.Message);
+            env.WriteError(ex.Message);
             return 1;
         }
 
@@ -47,13 +46,14 @@ public class CryptRunner(ICryptEnvironment env)
             return RunCrypt(options, files, password);
         }
 
-        _env.WriteError(Resources.You_must_specify_either_encrypt_or_decrypt_option);
+        env.WriteError(Resources.You_must_specify_either_encrypt_or_decrypt_option);
         return 1;
     }
 
     private static void ValidateOptions(Options options)
     {
-        var operationCount = (options.Encrypt ? 1 : 0) + (options.Decrypt ? 1 : 0) + (options.Generate ? 1 : 0);
+        bool[] cryptoOptionsStatus = [options.Encrypt, options.Decrypt, options.Generate];
+        var operationCount = cryptoOptionsStatus.Count(enabled => enabled);
         if (operationCount == 0)
         {
             throw new ArgumentException(Resources.You_must_specify_either_encrypt_or_decrypt_option);
@@ -71,12 +71,24 @@ public class CryptRunner(ICryptEnvironment env)
 
         if (options.Generate)
         {
-            if (string.IsNullOrEmpty(options.KeyFile))
-            {
-                throw new ArgumentException(Resources.Key_file_path_required);
-            }
-            return;
+            ValidateGenerateOptions(options);
         }
+        else
+        {
+            ValidateCryptOptions(options);
+        }
+    }
+
+    private static void ValidateGenerateOptions(Options options)
+    {
+        if (string.IsNullOrEmpty(options.KeyFile))
+        {
+            throw new ArgumentException(Resources.Key_file_path_required);
+        }
+    }
+
+    private static void ValidateCryptOptions(Options options)
+    {
 
         if (!string.IsNullOrEmpty(options.LegacyFile) && options.Files.Any())
         {
@@ -129,19 +141,19 @@ public class CryptRunner(ICryptEnvironment env)
     {
         if (File.Exists(options.KeyFile))
         {
-            _env.WriteError(string.Format(Resources.Key_file_already_exists, options.KeyFile));
+            env.WriteError(string.Format(Resources.Key_file_already_exists, options.KeyFile));
             return 1;
         }
 
         try
         {
             GenerateKeyFile(options.KeyFile!);
-            _env.WriteInfo(string.Format(Resources.Key_file_generated, options.KeyFile));
+            env.WriteInfo(string.Format(Resources.Key_file_generated, options.KeyFile));
             return 0;
         }
         catch (Exception ex)
         {
-            _env.WriteError(ex.Message);
+            env.WriteError(ex.Message);
             return 1;
         }
     }
@@ -166,7 +178,7 @@ public class CryptRunner(ICryptEnvironment env)
             }
             catch (Exception ex)
             {
-                _env.WriteError(ex.Message);
+                env.WriteError(ex.Message);
                 anyFailed = true;
             }
         }
@@ -185,8 +197,8 @@ public class CryptRunner(ICryptEnvironment env)
             throw new FileNotFoundException(string.Format(Resources.The_input_file_does_not_exist, inputFile));
         }
 
-        using var inStream = _env.OpenInput(inputFile, isStdin);
-        using var outStream = _env.OpenOutput(outputFile, isStdout);
+        using var inStream = env.OpenInput(inputFile, isStdin);
+        using var outStream = env.OpenOutput(outputFile, isStdout);
         new AesCrypt().EncryptStream(inStream, outStream, password, BufferSize);
     }
 
@@ -207,8 +219,8 @@ public class CryptRunner(ICryptEnvironment env)
             return;
         }
 
-        using var inStream = _env.OpenInput(inputFile, false);
-        using var outStream = _env.OpenOutput(outputFile, isStdout);
+        using var inStream = env.OpenInput(inputFile, false);
+        using var outStream = env.OpenOutput(outputFile, isStdout);
 
         if (inStream.CanSeek)
         {
@@ -232,21 +244,21 @@ public class CryptRunner(ICryptEnvironment env)
                     $"TronAesCrypt_stdin_{Guid.NewGuid():N}.aes.tmp");
 
                 using var tempStream = new FileStream(tempFile, FileMode.Create, FileAccess.Write);
-                using var stdin = _env.OpenInput("-", true);
+                using var stdin = env.OpenInput("-", true);
                 stdin.CopyTo(tempStream);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
             {
-                _env.WriteInfo(Resources.Stdin_using_memory_fallback);
-                using var stdin = _env.OpenInput("-", true);
+                env.WriteInfo(Resources.Stdin_using_memory_fallback);
+                using var stdin = env.OpenInput("-", true);
                 using var bufferedStream = EnsureSeekable(stdin);
-                using var fallbackOutStream = _env.OpenOutput(outputFile, isStdout);
+                using var fallbackOutStream = env.OpenOutput(outputFile, isStdout);
                 new AesCrypt().DecryptStream(bufferedStream, fallbackOutStream, password, BufferSize);
                 return;
             }
 
-            using var inStream = _env.OpenInput(tempFile, false);
-            using var finalOutStream = _env.OpenOutput(outputFile, isStdout);
+            using var inStream = env.OpenInput(tempFile, false);
+            using var finalOutStream = env.OpenOutput(outputFile, isStdout);
             new AesCrypt().DecryptStream(inStream, finalOutStream, password, BufferSize);
         }
         finally
@@ -295,17 +307,17 @@ public class CryptRunner(ICryptEnvironment env)
                 throw new FileNotFoundException(string.Format(Resources.Key_file_not_found, options.KeyFile));
             }
 
-            using var stream = _env.OpenInput(options.KeyFile, false);
+            using var stream = env.OpenInput(options.KeyFile, false);
             using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             return reader.ReadToEnd();
         }
 
-        return _env.ReadPassword();
+        return env.ReadPassword();
     }
 
     private void GenerateKeyFile(string path)
     {
-        using var stream = _env.OpenOutput(path, false);
+        using var stream = env.OpenOutput(path, false);
         using var writer = new StreamWriter(stream, new System.Text.UnicodeEncoding(false, true));
 
         const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
