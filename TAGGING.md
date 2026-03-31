@@ -31,19 +31,38 @@ Short tags such as `v2.0` become ambiguous once patch and prerelease tags exist.
 
 ## Release steps
 
-Create a tag locally:
+Releases are automated via GitHub Actions. When you push a tag matching `v{MAJOR}.{MINOR}.{PATCH}[-prerelease]`, the workflow:
+
+1. Validates the tag format
+2. Extracts the version (e.g., `v2.0.0` → `2.0.0`)
+3. Builds the project with the derived version
+4. Packs the NuGet package
+5. Creates a GitHub Release with the `.nupkg` artifact
+
+### Creating a release
+
+Create and push a tag locally:
 
 ```bash
 git tag v2.0.0
-```
-
-Push the tag to `origin`:
-
-```bash
 git push origin v2.0.0
 ```
 
-Other examples:
+### GitHub Actions will then:
+
+- Extract version `2.0.0` from the tag
+- Pack `TRONSoft.TronAesCrypt.Core.2.0.0.nupkg`
+- Create a GitHub Release with the package attached
+- Mark prerelease tags (e.g., `v2.0.0-rc1`) as prerelease releases
+
+### After the workflow completes
+
+1. Check the [GitHub Actions](../../actions) tab to verify the workflow succeeded
+2. Visit the [Releases](../../releases) page to see the new release
+3. Add manual release notes on GitHub if desired (edit the release to add description, highlights, breaking changes, etc.)
+4. The `.nupkg` artifact is available for download from the release
+
+### Other examples
 
 ```bash
 git tag v2.0.1
