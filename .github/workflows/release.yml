@@ -60,4 +60,4 @@ jobs:
             
             Manual release notes can be added on GitHub after the release is created.
             
-            See [TAGGING.md](../blob/master/TAGGING.md) for release conventions.
+            See [TAGGING.md](https://github.com/${{ github.repository }}/blob/${{ github.event.repository.default_branch }}/TAGGING.md) for release conventions.
