@@ -1,10 +1,6 @@
 # Tagging
 
 This repository uses Git tags with a `v` prefix.
-# Tagging
-
-This repository uses Git tags with a `v` prefix.
-
 ## Current release tag
 
 The current release tag is `v2.0.0`.
