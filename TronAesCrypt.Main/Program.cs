@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using CommandLine;
 using TronAesCrypt.Main;
 
@@ -48,5 +49,5 @@ var env = new ConsoleEnvironment(() =>
     }
 });
 
-return Parser.Default.ParseArguments<Options>(args)
-    .MapResult(opts => new CryptRunner(env).Run(opts), _ => 1);
+return await Parser.Default.ParseArguments<Options>(args)
+    .MapResult(async opts => await new CryptRunner(env).RunAsync(opts), _ => Task.FromResult(1));

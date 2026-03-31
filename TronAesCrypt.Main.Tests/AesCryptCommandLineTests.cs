@@ -20,7 +20,7 @@ public class AesCryptCommandLineTests
         var password = _fixture.Create<string>();
         await CreateTextFile(fileToEncrypt, _fixture.Create<string>());
 
-        Assert.True(AesCryptProcessRunner.CanEncrypt(fileToEncrypt, encryptedFile, password));
+        Assert.True(await AesCryptProcessRunner.CanEncryptAsync(fileToEncrypt, encryptedFile, password));
     }
 
     [Fact]
@@ -32,8 +32,8 @@ public class AesCryptCommandLineTests
         var password = _fixture.Create<string>();
         await CreateTextFile(fileToEncrypt, _fixture.Create<string>());
 
-        Assert.True(AesCryptProcessRunner.CanEncrypt(fileToEncrypt, encryptedFile, password));
-        Assert.True(AesCryptProcessRunner.CanDecrypt(encryptedFile, decryptedFile, password));
+        Assert.True(await AesCryptProcessRunner.CanEncryptAsync(fileToEncrypt, encryptedFile, password));
+        Assert.True(await AesCryptProcessRunner.CanDecryptAsync(encryptedFile, decryptedFile, password));
     }
 
 
@@ -45,7 +45,7 @@ public class AesCryptCommandLineTests
         var password = _fixture.Create<string>();
         await CreateTextFile(fileToEncrypt, _fixture.Create<string>());
 
-        Assert.True(AesCryptProcessRunner.CanEncryptPositional(fileToEncrypt, encryptedFile, password));
+        Assert.True(await AesCryptProcessRunner.CanEncryptPositionalAsync(fileToEncrypt, encryptedFile, password));
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public class AesCryptCommandLineTests
         var password = _fixture.Create<string>();
         await CreateTextFile(fileToEncrypt, _fixture.Create<string>());
 
-        Assert.True(AesCryptProcessRunner.CanEncryptPositional(fileToEncrypt, encryptedFile, password));
-        Assert.True(AesCryptProcessRunner.CanDecryptPositional(encryptedFile, decryptedFile, password));
+        Assert.True(await AesCryptProcessRunner.CanEncryptPositionalAsync(fileToEncrypt, encryptedFile, password));
+        Assert.True(await AesCryptProcessRunner.CanDecryptPositionalAsync(encryptedFile, decryptedFile, password));
     }
 
     [Fact]
@@ -78,11 +78,11 @@ public class AesCryptCommandLineTests
         await CreateTextFile(legacyInput, plaintext);
         await CreateTextFile(positionalInput, plaintext);
 
-        Assert.True(AesCryptProcessRunner.CanEncrypt(legacyInput, legacyEncrypted, password));
-        Assert.True(AesCryptProcessRunner.CanEncryptPositional(positionalInput, positionalEncrypted, password));
+        Assert.True(await AesCryptProcessRunner.CanEncryptAsync(legacyInput, legacyEncrypted, password));
+        Assert.True(await AesCryptProcessRunner.CanEncryptPositionalAsync(positionalInput, positionalEncrypted, password));
 
-        Assert.True(AesCryptProcessRunner.CanDecrypt(legacyEncrypted, legacyDecrypted, password));
-        Assert.True(AesCryptProcessRunner.CanDecryptPositional(positionalEncrypted, positionalDecrypted, password));
+        Assert.True(await AesCryptProcessRunner.CanDecryptAsync(legacyEncrypted, legacyDecrypted, password));
+        Assert.True(await AesCryptProcessRunner.CanDecryptPositionalAsync(positionalEncrypted, positionalDecrypted, password));
 
         Assert.Equal(await File.ReadAllTextAsync(legacyDecrypted), await File.ReadAllTextAsync(positionalDecrypted));
     }
@@ -97,7 +97,7 @@ public class AesCryptCommandLineTests
 
         try
         {
-            var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-p", "pass", input]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", "pass", input]);
             Assert.Equal(0, exitCode);
             Assert.True(File.Exists(expectedOutput), $"Expected {expectedOutput} to exist");
         }
@@ -120,11 +120,11 @@ public class AesCryptCommandLineTests
 
         try
         {
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(["-e", "-p", "pass", "-o", encrypted, plainInput]));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", "pass", "-o", encrypted, plainInput]));
 
             File.Delete(plainInput);
 
-            var exitCode = AesCryptProcessRunner.RunArgs(["-d", "-p", "pass", encrypted]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-d", "-p", "pass", encrypted]);
             Assert.Equal(0, exitCode);
             Assert.True(File.Exists(expectedDecrypted), $"Expected {expectedDecrypted} to exist");
         }
@@ -136,10 +136,10 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void AutoOutput_Decrypt_NonAesFile_ReturnsNonZero()
+    public async Task AutoOutput_Decrypt_NonAesFile_ReturnsNonZero()
     {
         var input = Path.GetTempFileName();
-        var exitCode = AesCryptProcessRunner.RunArgs(["-d", "-p", "pass", input]);
+        var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-d", "-p", "pass", input]);
         Assert.NotEqual(0, exitCode);
     }
 
@@ -154,12 +154,12 @@ public class AesCryptCommandLineTests
         var content = _fixture.Create<string>();
         await CreateTextFile(input, content);
 
-        var encryptExit = AesCryptProcessRunner.RunWithPasswordReader(
+        var encryptExit = await AesCryptProcessRunner.RunWithPasswordReaderAsync(
             ["-e", "-o", encrypted, input],
             () => password);
         Assert.Equal(0, encryptExit);
 
-        var decryptExit = AesCryptProcessRunner.RunWithPasswordReader(
+        var decryptExit = await AesCryptProcessRunner.RunWithPasswordReaderAsync(
             ["-d", "-o", decrypted, encrypted],
             () => password);
         Assert.Equal(0, decryptExit);
@@ -175,9 +175,9 @@ public class AesCryptCommandLineTests
         var decrypted = Path.GetTempFileName();
         await CreateTextFile(input, _fixture.Create<string>());
 
-        AesCryptProcessRunner.RunWithPasswordReader(["-e", "-o", encrypted, input], () => "correctpassword");
+        await AesCryptProcessRunner.RunWithPasswordReaderAsync(["-e", "-o", encrypted, input], () => "correctpassword");
 
-        var decryptExit = AesCryptProcessRunner.RunWithPasswordReader(
+        var decryptExit = await AesCryptProcessRunner.RunWithPasswordReaderAsync(
             ["-d", "-o", decrypted, encrypted],
             () => "wrongpassword");
         Assert.NotEqual(0, decryptExit);
@@ -185,9 +185,9 @@ public class AesCryptCommandLineTests
 
 
     [Fact]
-    public void Error_NoOperationFlag_ReturnsNonZero()
+    public async Task Error_NoOperationFlag_ReturnsNonZero()
     {
-        var exitCode = AesCryptProcessRunner.RunArgs(["-p", "pass", "-o", "out.aes", "input.txt"]);
+        var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-p", "pass", "-o", "out.aes", "input.txt"]);
         Assert.NotEqual(0, exitCode);
     }
 
@@ -199,7 +199,7 @@ public class AesCryptCommandLineTests
         await CreateTextFile(input, _fixture.Create<string>());
 
         var readerCalled = false;
-        var exitCode = AesCryptProcessRunner.RunWithPasswordReader(
+        var exitCode = await AesCryptProcessRunner.RunWithPasswordReaderAsync(
             ["-e", "-o", output, input],
             () =>
             {
@@ -212,9 +212,9 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void Error_NoInputFile_ReturnsNonZero()
+    public async Task Error_NoInputFile_ReturnsNonZero()
     {
-        var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-p", "pass", "-o", "out.aes"]);
+        var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", "pass", "-o", "out.aes"]);
         Assert.NotEqual(0, exitCode);
     }
 
@@ -224,20 +224,20 @@ public class AesCryptCommandLineTests
         var file = Path.GetTempFileName();
         await CreateTextFile(file, _fixture.Create<string>());
 
-        var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-p", "pass", "-f", file, "-o", "out.aes", file]);
+        var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", "pass", "-f", file, "-o", "out.aes", file]);
         Assert.NotEqual(0, exitCode);
     }
 
     [Fact]
-    public void Error_InputFileNotFound_ReturnsNonZero()
+    public async Task Error_InputFileNotFound_ReturnsNonZero()
     {
-        var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-p", "pass", "-o", "out.aes", "file-that-does-not-exist.txt"]);
+        var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", "pass", "-o", "out.aes", "file-that-does-not-exist.txt"]);
         Assert.NotEqual(0, exitCode);
     }
 
 
     [Fact]
-    public void Piping_EncryptFromStdin_ToStdout_RoundTrips()
+    public async Task Piping_EncryptFromStdin_ToStdout_RoundTrips()
     {
         var plaintext = "Hello, piped world!"u8.ToArray();
         var password = _fixture.Create<string>();
@@ -245,14 +245,14 @@ public class AesCryptCommandLineTests
         var encryptedStream = new MemoryStream();
         var decryptedStream = new MemoryStream();
 
-        AesCryptProcessRunner.RunWithStreams(
+        await AesCryptProcessRunner.RunWithStreamsAsync(
             ["-e", "-p", password, "-o", "-", "-"],
             new MemoryStream(plaintext),
             encryptedStream);
 
         encryptedStream.Position = 0;
 
-        AesCryptProcessRunner.RunWithStreams(
+        await AesCryptProcessRunner.RunWithStreamsAsync(
             ["-d", "-p", password, "-o", "-", "-"],
             encryptedStream,
             decryptedStream);
@@ -261,7 +261,7 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void Piping_EncryptFromStdin_ToFile_RoundTrips()
+    public async Task Piping_EncryptFromStdin_ToFile_RoundTrips()
     {
         var plaintext = "Piped to file!"u8.ToArray();
         var password = _fixture.Create<string>();
@@ -270,12 +270,12 @@ public class AesCryptCommandLineTests
 
         try
         {
-            AesCryptProcessRunner.RunWithStreams(
+            await AesCryptProcessRunner.RunWithStreamsAsync(
                 ["-e", "-p", password, "-o", encryptedFile, "-"],
                 new MemoryStream(plaintext),
                 outputOverride: null);
 
-            AesCryptProcessRunner.RunWithStreams(
+            await AesCryptProcessRunner.RunWithStreamsAsync(
                 ["-d", "-p", password, "-o", decryptedFile, "-"],
                 new MemoryStream(File.ReadAllBytes(encryptedFile)),
                 outputOverride: null);
@@ -301,14 +301,14 @@ public class AesCryptCommandLineTests
 
         try
         {
-            AesCryptProcessRunner.RunWithStreams(
+            await AesCryptProcessRunner.RunWithStreamsAsync(
                 ["-e", "-p", password, "-o", "-", input],
                 stdinOverride: null,
                 encryptedStream);
 
             encryptedStream.Position = 0;
 
-            AesCryptProcessRunner.RunWithStreams(
+            await AesCryptProcessRunner.RunWithStreamsAsync(
                 ["-d", "-p", password, "-o", "-", "-"],
                 encryptedStream,
                 decryptedStream);
@@ -323,11 +323,11 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void Piping_StdinWithoutExplicitOutput_ReturnsNonZero()
+    public async Task Piping_StdinWithoutExplicitOutput_ReturnsNonZero()
     {
         var plaintext = "missing output"u8.ToArray();
 
-        var exitCode = AesCryptProcessRunner.RunWithStreams(
+        var exitCode = await AesCryptProcessRunner.RunWithStreamsAsync(
             ["-e", "-p", "pass", "-"],
             new MemoryStream(plaintext),
             outputOverride: null);
@@ -336,11 +336,11 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void Piping_MultipleStdinArguments_ReturnsNonZero()
+    public async Task Piping_MultipleStdinArguments_ReturnsNonZero()
     {
         var plaintext = "multiple stdin"u8.ToArray();
 
-        var exitCode = AesCryptProcessRunner.RunWithStreams(
+        var exitCode = await AesCryptProcessRunner.RunWithStreamsAsync(
             ["-e", "-p", "pass", "-o", "-", "-", "-"],
             new MemoryStream(plaintext),
             new MemoryStream());
@@ -357,7 +357,7 @@ public class AesCryptCommandLineTests
         try
         {
             var plaintext = "mixed stdin"u8.ToArray();
-            var exitCode = AesCryptProcessRunner.RunWithStreams(
+            var exitCode = await AesCryptProcessRunner.RunWithStreamsAsync(
                 ["-e", "-p", "pass", "-o", "-", "-", file],
                 new MemoryStream(plaintext),
                 new MemoryStream());
@@ -372,13 +372,13 @@ public class AesCryptCommandLineTests
 
 
     [Fact]
-    public void KeyFile_Generate_CreatesUtf16LeFileWithMinLength()
+    public async Task KeyFile_Generate_CreatesUtf16LeFileWithMinLength()
     {
         var keyFile = CreateTempPath(".key");
 
         try
         {
-            var exitCode = AesCryptProcessRunner.RunArgs(["-g", "-k", keyFile]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-g", "-k", keyFile]);
 
             Assert.Equal(0, exitCode);
             Assert.True(File.Exists(keyFile), "Key file should have been created");
@@ -398,20 +398,20 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void KeyFile_Generate_WithoutKFlag_ReturnsNonZero()
+    public async Task KeyFile_Generate_WithoutKFlag_ReturnsNonZero()
     {
-        var exitCode = AesCryptProcessRunner.RunArgs(["-g"]);
+        var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-g"]);
         Assert.NotEqual(0, exitCode);
     }
 
     [Fact]
-    public void KeyFile_Generate_ExistingFile_ReturnsNonZero()
+    public async Task KeyFile_Generate_ExistingFile_ReturnsNonZero()
     {
         var keyFile = Path.GetTempFileName();
 
         try
         {
-            var exitCode = AesCryptProcessRunner.RunArgs(["-g", "-k", keyFile]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-g", "-k", keyFile]);
             Assert.NotEqual(0, exitCode);
         }
         finally
@@ -432,9 +432,9 @@ public class AesCryptCommandLineTests
 
         try
         {
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(["-g", "-k", keyFile]));
-            Assert.True(AesCryptProcessRunner.CanEncryptWithKeyFile(input, encrypted, keyFile));
-            Assert.True(AesCryptProcessRunner.CanDecryptWithKeyFile(encrypted, decrypted, keyFile));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(["-g", "-k", keyFile]));
+            Assert.True(await AesCryptProcessRunner.CanEncryptWithKeyFileAsync(input, encrypted, keyFile));
+            Assert.True(await AesCryptProcessRunner.CanDecryptWithKeyFileAsync(encrypted, decrypted, keyFile));
 
             Assert.Equal(content + Environment.NewLine, await File.ReadAllTextAsync(decrypted));
         }
@@ -456,9 +456,9 @@ public class AesCryptCommandLineTests
 
         try
         {
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(["-g", "-k", keyFile]));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(["-g", "-k", keyFile]));
 
-            var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-p", "somepassword", "-k", keyFile, "-o", "out.aes", input]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", "somepassword", "-k", keyFile, "-o", "out.aes", input]);
             Assert.NotEqual(0, exitCode);
         }
         finally
@@ -469,13 +469,13 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void KeyFile_Usage_MissingKeyFile_ReturnsNonZero()
+    public async Task KeyFile_Usage_MissingKeyFile_ReturnsNonZero()
     {
         var input = Path.GetTempFileName();
 
         try
         {
-            var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-k", "nonexistent.key", "-o", "out.aes", input]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-k", "nonexistent.key", "-o", "out.aes", input]);
             Assert.NotEqual(0, exitCode);
         }
         finally
@@ -510,7 +510,7 @@ public class AesCryptCommandLineTests
                 encryptArgs.Add(f.plain);
             }
 
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs([.. encryptArgs]));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync([.. encryptArgs]));
 
             foreach (var f in files)
             {
@@ -519,7 +519,7 @@ public class AesCryptCommandLineTests
 
             foreach (var f in files)
             {
-                Assert.True(AesCryptProcessRunner.CanDecrypt(f.encrypted, f.decrypted, password));
+                Assert.True(await AesCryptProcessRunner.CanDecryptAsync(f.encrypted, f.decrypted, password));
                 Assert.Equal(
                     await File.ReadAllTextAsync(f.plain),
                     await File.ReadAllTextAsync(f.decrypted));
@@ -548,7 +548,7 @@ public class AesCryptCommandLineTests
 
         try
         {
-            var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-p", password, goodFile, missingFile]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", password, goodFile, missingFile]);
 
             Assert.NotEqual(0, exitCode);
             Assert.True(File.Exists(goodEncrypted), "Good file should have been encrypted even though another failed");
@@ -570,7 +570,7 @@ public class AesCryptCommandLineTests
 
         try
         {
-            var exitCode = AesCryptProcessRunner.RunArgs(["-e", "-p", "pass", "-o", "combined.aes", file1, file2]);
+            var exitCode = await AesCryptProcessRunner.RunArgsAsync(["-e", "-p", "pass", "-o", "combined.aes", file1, file2]);
             Assert.NotEqual(0, exitCode);
         }
         finally
@@ -593,8 +593,8 @@ public class AesCryptCommandLineTests
 
         try
         {
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(["-e", "-f", input, "-o", encrypted, "-p", password]));
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(["-d", "-f", encrypted, "-o", decrypted, "-p", password]));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(["-e", "-f", input, "-o", encrypted, "-p", password]));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(["-d", "-f", encrypted, "-o", decrypted, "-p", password]));
             Assert.Equal(content + Environment.NewLine, await File.ReadAllTextAsync(decrypted));
         }
         finally
@@ -623,10 +623,10 @@ public class AesCryptCommandLineTests
 
         try
         {
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(["-g", "-k", keyFile]));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(["-g", "-k", keyFile]));
 
             var encryptArgs = new[] { "-e", "-k", keyFile }.Concat(files).ToArray();
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(encryptArgs));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(encryptArgs));
 
             for (var i = 0; i < files.Length; i++)
             {
@@ -636,7 +636,7 @@ public class AesCryptCommandLineTests
                 var decrypted = Path.GetTempFileName();
                 try
                 {
-                    Assert.True(AesCryptProcessRunner.CanDecryptWithKeyFile(encryptedPath, decrypted, keyFile));
+                    Assert.True(await AesCryptProcessRunner.CanDecryptWithKeyFileAsync(encryptedPath, decrypted, keyFile));
                     Assert.Equal(contents[i] + Environment.NewLine, await File.ReadAllTextAsync(decrypted));
                 }
                 finally
@@ -657,17 +657,17 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void Integration_StdinToStdout_WithKeyFile_RoundTrips()
+    public async Task Integration_StdinToStdout_WithKeyFile_RoundTrips()
     {
         var keyFile = CreateTempPath(".key");
         var plaintext = "stdin+keyfile integration test"u8.ToArray();
 
         try
         {
-            Assert.Equal(0, AesCryptProcessRunner.RunArgs(["-g", "-k", keyFile]));
+            Assert.Equal(0, await AesCryptProcessRunner.RunArgsAsync(["-g", "-k", keyFile]));
 
             var encrypted = new MemoryStream();
-            AesCryptProcessRunner.RunWithStreams(
+            await AesCryptProcessRunner.RunWithStreamsAsync(
                 ["-e", "-k", keyFile, "-o", "-", "-"],
                 new MemoryStream(plaintext),
                 encrypted);
@@ -675,7 +675,7 @@ public class AesCryptCommandLineTests
             encrypted.Position = 0;
 
             var decrypted = new MemoryStream();
-            AesCryptProcessRunner.RunWithStreams(
+            await AesCryptProcessRunner.RunWithStreamsAsync(
                 ["-d", "-k", keyFile, "-o", "-", "-"],
                 encrypted,
                 decrypted);
@@ -689,7 +689,7 @@ public class AesCryptCommandLineTests
     }
 
     [Fact]
-    public void Integration_LargeFileViaStdinBuffering_RoundTrips()
+    public async Task Integration_LargeFileViaStdinBuffering_RoundTrips()
     {
         var password = _fixture.Create<string>();
         var random = new Random(42);
@@ -697,7 +697,7 @@ public class AesCryptCommandLineTests
         random.NextBytes(plaintext);
 
         var encrypted = new MemoryStream();
-        AesCryptProcessRunner.RunWithStreams(
+        await AesCryptProcessRunner.RunWithStreamsAsync(
             ["-e", "-p", password, "-o", "-", "-"],
             new MemoryStream(plaintext),
             encrypted);
@@ -705,7 +705,7 @@ public class AesCryptCommandLineTests
         encrypted.Position = 0;
 
         var decrypted = new MemoryStream();
-        AesCryptProcessRunner.RunWithStreams(
+        await AesCryptProcessRunner.RunWithStreamsAsync(
             ["-d", "-p", password, "-o", "-", "-"],
             encrypted,
             decrypted);
@@ -724,13 +724,13 @@ public class AesCryptCommandLineTests
 
         try
         {
-            var encryptExit = AesCryptProcessRunner.RunWithPasswordReader(["-e", input], () => password);
+            var encryptExit = await AesCryptProcessRunner.RunWithPasswordReaderAsync(["-e", input], () => password);
             Assert.Equal(0, encryptExit);
             Assert.True(File.Exists(expectedEncrypted));
 
             File.Delete(input);
 
-            var decryptExit = AesCryptProcessRunner.RunWithPasswordReader(["-d", expectedEncrypted], () => password);
+            var decryptExit = await AesCryptProcessRunner.RunWithPasswordReaderAsync(["-d", expectedEncrypted], () => password);
             Assert.Equal(0, decryptExit);
             Assert.True(File.Exists(input));
             Assert.Equal(content + Environment.NewLine, await File.ReadAllTextAsync(input));
