@@ -46,13 +46,13 @@ jobs:
         run: dotnet build --configuration Release --no-restore /p:PackageVersion=${{ steps.version.outputs.version }}
 
       - name: Pack
-        run: dotnet pack --configuration Release --no-build --output nupkg /p:PackageVersion=${{ steps.version.outputs.version }}
+        run: dotnet pack TronAesCrypt.Core/TronAesCrypt.Core.csproj --configuration Release --no-build --output nupkg /p:PackageVersion=${{ steps.version.outputs.version }}
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.version.outputs.tag }}
-          artifacts: 'nupkg/*.nupkg'
+          artifacts: 'nupkg/TRONSoft.TronAesCrypt.Core.*.nupkg'
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}
           body: |
