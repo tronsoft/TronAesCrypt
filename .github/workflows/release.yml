@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          if [[ ${VERSION} =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "valid_format=true" >> $GITHUB_OUTPUT
+          else
+            echo "valid_format=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate tag format
+        run: |
+          if [[ "${{ steps.version.outputs.valid_format }}" != "true" ]]; then
+            echo "Invalid tag format: ${{ steps.version.outputs.tag }}"
+            echo "Expected format: v{MAJOR}.{MINOR}.{PATCH}[-prerelease]"
+            exit 1
+          fi
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          include-prerelease: true
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore /p:PackageVersion=${{ steps.version.outputs.version }}
+
+      - name: Pack
+        run: dotnet pack TronAesCrypt.Core/TronAesCrypt.Core.csproj --configuration Release --no-build --output nupkg /p:PackageVersion=${{ steps.version.outputs.version }}
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.version.outputs.tag }}
+          artifacts: 'nupkg/TRONSoft.TronAesCrypt.Core.*.nupkg'
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          body: |
+            NuGet Package: `TRONSoft.TronAesCrypt.Core` version ${{ steps.version.outputs.version }}
+            
+            Manual release notes can be added on GitHub after the release is created.
+            
+            See [TAGGING.md](https://github.com/${{ github.repository }}/blob/${{ github.event.repository.default_branch }}/TAGGING.md) for release conventions.
